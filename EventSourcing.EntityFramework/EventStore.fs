@@ -95,10 +95,10 @@ module EventStore =
         let addEvent (id : EntityId) (e : 'e) =
             useContext (fun c -> c.Add (id, e)) |> ignore
 
-        let projectEvents (p : Projection.T<'e,_,'a>) (id : EntityId) : 'a =
+        let restore (p : Projection.T<'e,_,'a>) (id : EntityId) : 'a =
             useContext (fun c -> c.LoadProjection (p, id))
 
         { new IEventStore with
             member __.entityIds ()  = entityIds ()
             member __.add id ev     = addEvent id ev
-            member __.playback p id = projectEvents p id }
+            member __.restore p id  = restore p id }

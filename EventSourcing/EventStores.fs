@@ -10,15 +10,15 @@ type EntityId = Guid
 type IEventStore =
     abstract entityIds : unit -> Collections.Generic.HashSet<EntityId>
     abstract add       : Guid -> 'e -> unit
-    abstract playback  : Projection.T<'e,_,'a> -> Guid -> 'a
+    abstract restore   : Projection.T<'e,_,'a> -> Guid -> 'a
 
 module EventStore =
 
     let add (id : EntityId) (e : 'e) (es : IEventStore) =
         es.add id e
 
-    let playback (p : Projection.T<_,_,'a>) (id : EntityId) (es : IEventStore) : 'a =
-        es.playback p id
+    let restore (p : Projection.T<_,_,'a>) (id : EntityId) (es : IEventStore) : 'a =
+        es.restore p id
 
     let exists (id : EntityId) (es : IEventStore) =
         es.entityIds().Contains id
@@ -44,6 +44,6 @@ module EventStore =
                 |> Seq.map unbox
                 |> Projection.fold p)
             { new IEventStore with
-                member __.add id e = add id e
-                member __.playback p id = play p id
-                member __.entityIds () = ids () }
+                member __.add id e       = add id e
+                member __.restore p id   = play p id
+                member __.entityIds ()   = ids () }

@@ -118,7 +118,7 @@ module Example =
 
     let unload (g : Goods) (w : Weight) (id : Id) : Context.Computation<unit> =
         context {
-            let! loaded = Context.playback (goodWeight g) id
+            let! loaded = Context.restore (goodWeight g) id
             if w > loaded then failwith "cannot unload more than is loaded"
             let ev = Unloaded (g,w)
             do! Context.add id ev }
@@ -147,7 +147,7 @@ module Example =
 
         // aggregate the history into a container-info and print it
         container 
-        |> Context.playback containerInfo 
+        |> Context.restore containerInfo 
         |> Context.evalUsing store
         |> (fun ci -> printfn "Container %A currently in %s, loaded with: %A for a total of %.2ft is overloaded: %A" 
                         ci.id ci.location (List.map fst ci.goods) (ci.netto / 1.0<t>) ci.overloaded)

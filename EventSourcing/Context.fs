@@ -43,8 +43,8 @@ module Context =
     let add (id : EntityId) (e : 'e) : Computation<unit> =
         fun ctx -> ctx.store |> EventStore.add id e
 
-    let playback (p : Projection.T<'e,_,'a>) (id : EntityId) : Computation<'a> =
-        fun ctx -> ctx.store |> EventStore.playback p id
+    let restore (p : Projection.T<'e,_,'a>) (id : EntityId) : Computation<'a> =
+        fun ctx -> ctx.store |> EventStore.restore p id
 
     let exists (id : EntityId) : Computation<bool> =
         fun ctx -> ctx.store |> EventStore.exists id
