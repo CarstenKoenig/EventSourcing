@@ -6,7 +6,7 @@ EventSourcing library with support for applicative projection definitions
 
 ## background
 
-** CAUTION: quasi-theoretic semi-nonsense ahead - feel free to skip **
+**CAUTION: quasi-theoretic semi-nonsense ahead - feel free to skip**
 
 **EventSourcing** is sometimes called *functional-databse*. If you look at how current data/state is recustructed from a sequence of events it nothing less than a **functional left-fold**.
 
