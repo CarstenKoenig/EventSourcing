@@ -140,8 +140,8 @@ module Example =
                 do!  container |> unload "Tomatoes"         2.5<t>
                 do!  container |> load   "Fish"            20.0<t>
                 do!  container |> shipTo "Hongkong"
-                return container
-            } |> Context.evalUsing store
+                return container } 
+            |> Context.evalUsing store
 
         // aggregate the history into a container-info and print it
         container 
