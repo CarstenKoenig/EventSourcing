@@ -51,14 +51,9 @@ This is a good example we can use  `<?>` and `<*>` in a clever way to build up p
 
 Here we use a curried constructor for `ContainerInfo` (a function with 5 arguments) and pass those in one-by-one using the applicative operators `<?>` and `<*>` - btw: I learnded this trick from WebSharper!
 
-You can understand this if you think of the first applicative-law (ignoring the state-types that get's in the way) like this:
+Remember: `pure f <*> x == f <?> x` (**remark** in this library `pure` is named `constant`).
 
-```
-pure f <*> x == f <?> x
-```
-(*remark* in this library `pure` is named `constant`)
-
-now let's give the projections an simplified type `P<'a>` meaning a projection that yields an `'a`.
+Now let's give the projections a simplified type: `P<'a>` (think: "projection that yields an `'a`").
 
 Then we can see that  `pure containerInfo` has type `P<Id -> Location -> Weigth -> Bool -> (Goods * Weight) list -> ContainerInfo>`.
 And because `<*>` has type `P<'a -> 'b> -> P<'a> -> P<'a>` we see that `createInfo <?> id` plugs in the id into the constructor (in the final projection - that's how `fmap` is defined) and has type `P<Location -> Weigth -> Bool -> (Goods * Weight) list -> ContainerInfo>`.
