@@ -61,6 +61,16 @@ module Projection =
         let init = Unchecked.defaultof<'a>
         create init (fun l e -> match f e with Some v -> v | None -> l)
 
+    /// gets the sinlge result of type (Some v) that f returns for a event 
+    /// and throws an exception if there is not exactly one such event
+    let inline single (f : 'e -> 'a option) : T<'e,_,'a> =
+        createWithProjection Option.get None (fun acc e -> 
+            match (acc, f e) with 
+            | (None, Some v)   -> Some v 
+            | (Some _, Some _) -> failwith "more than one event yielding a value"
+            | _                -> acc)
+
+
 [<AutoOpen>]
 module ProjectionOperations =
     open Projection

@@ -29,12 +29,10 @@ module Example =
  
     /// the id of a container 
     let id = 
-        Projection.create Guid.Empty (fun s ev ->
-            match ev with
-            | Created i -> if s = Guid.Empty 
-                            then i
-                           else failwith "should not create a container twice"
-            | _ -> s)
+        Projection.single (
+            function
+            | Created i -> Some i
+            | _         -> None)
  
     /// the current location of a container
     let location = 
