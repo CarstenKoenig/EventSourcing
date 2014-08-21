@@ -42,6 +42,7 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Context.fs" />
     <Compile Include="Projections.fs" />
     <Compile Include="EventStores.fs" />
   </ItemGroup>
