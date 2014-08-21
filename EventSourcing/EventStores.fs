@@ -22,3 +22,28 @@ module EventStore =
 
     let exists (id : EntityId) (es : IEventStore) =
         es.entityIds().Contains id
+
+    module InMemory =
+
+        open System.Collections.Generic
+
+        let create () : IEventStore =
+            let cache = new Dictionary<EntityId, List<obj>>()
+            let ids () = lock cache (fun () -> cache.Keys |> fun ks -> new HashSet<_>(ks))
+            let add id e = lock cache (fun () -> 
+                match cache.TryGetValue id with
+                | (true, l)  -> l
+                | (false, _) -> let l = List<_>()
+                                cache.Add (id, l)
+                                l
+                |> fun l -> l.Add (box e))
+            let play p id = lock cache (fun () ->
+                match cache.TryGetValue id with
+                | (true, l)  -> l :> obj seq
+                | (false, _) -> Seq.empty
+                |> Seq.map unbox
+                |> Projection.fold p)
+            { new IEventStore with
+                member __.add id e = add id e
+                member __.playback p id = play p id
+                member __.entityIds () = ids () }
