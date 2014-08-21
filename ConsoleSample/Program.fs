@@ -89,29 +89,42 @@ module Example =
     let containerInfo =
         createInfo <?> id <*> location <*> nettoWeight <*> isOverloaded <*> goods
 
-    // commands
+    // *************************
+    // commands:
 
-    let createContainer (store : IEventStore) : Id =
-        let id = Id.NewGuid()
-        let ev = Created id
-        store |> EventStore.add id ev
-        id
+    let assertExists (id : Id) : Context.Computation<unit> =
+        context {
+            let! containerExists = Context.exists id
+            if not containerExists then failwith "container not found" }
 
-    let moveTo (id : Id) (l : Location) (store : IEventStore) =
-        if store |> EventStore.exists id |> not then failwith "container not found"
-        let ev = MovedTo l
-        store |> EventStore.add id ev
+    let createContainer : Context.Computation<Id> =
+        context {
+            let id = Id.NewGuid()
+            let ev = Created id
+            do! Context.add id ev
+            return id }
 
-    let loadGood (id : Id) (g : Goods, w : Weight) (store : IEventStore) =
-        if store |> EventStore.exists id |> not then failwith "container not found"
-        let ev = Loaded (g,w)
-        store |> EventStore.add id ev
+    let moveTo (l : Location) (id : Id) : Context.Computation<unit> =
+        context {
+            do! assertExists id
+            let ev = MovedTo l
+            do! Context.add id ev }
 
-    let unloadGood (id : Id) (g : Goods, w : Weight) (store : IEventStore) =
-        let loaded = store |> EventStore.playback (goodWeight g) id
-        if w > loaded then failwith "cannot unload more than is loaded"
-        let ev = Unloaded (g,w)
-        store |> EventStore.add id ev
+    let loadGood (g : Goods) (w : Weight) (id : Id) : Context.Computation<unit> =
+        context {
+            do! assertExists id
+            let ev = Loaded (g,w)
+            do! Context.add id ev }
+
+    let unloadGood (g : Goods) (w : Weight) (id : Id) : Context.Computation<unit> =
+        context {
+            let! loaded = Context.playback (goodWeight g) id
+            if w > loaded then failwith "cannot unload more than is loaded"
+            let ev = Unloaded (g,w)
+            do! Context.add id ev }
+
+    // ******************
+    // example
 
     /// run a basic example
     let run dbName =
@@ -119,12 +132,16 @@ module Example =
         let store = EntityFramework.EventStore.create dbName
 
         // insert some sample history
-        let id = store |> createContainer
-        store |> moveTo     id "Bremen"
-        store |> loadGood   id ("Tomaten", 3500.0<kg> |> toT)
-        store |> moveTo     id "Hamburg"
-        store |> unloadGood id ("Tomaten", 2.5<t>)
-        store |> loadGood   id ("Fisch", 20.0<t>)
+        let id = 
+            context {
+                let! container = createContainer
+                do!  container |> moveTo     "Bremen"
+                do!  container |> loadGood   "Tomaten" (toT 3500.0<kg>)
+                do!  container |> moveTo     "Hamburg"
+                do!  container |> unloadGood "Tomaten" 2.5<t>
+                do!  container |> loadGood   "Fisch" 20.0<t>
+                return container
+            } |> Context.evalUsing store
 
         // aggregate the history into a container-info and print it
         store |> EventStore.playback containerInfo id
