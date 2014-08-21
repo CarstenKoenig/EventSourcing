@@ -132,7 +132,7 @@ module Example =
         let store = EntityFramework.EventStore.create dbName
 
         // insert some sample history
-        let id = 
+        let container = 
             context {
                 let! container = createContainer
                 do!  container |> moveTo     "Bremen"
@@ -144,7 +144,9 @@ module Example =
             } |> Context.evalUsing store
 
         // aggregate the history into a container-info and print it
-        store |> EventStore.playback containerInfo id
+        container 
+        |> Context.playback containerInfo 
+        |> Context.evalUsing store
         |> (fun ci -> printfn "Container %A currently in %s, loaded with: %A for a total of %.2ft is overloaded: %A" 
                         ci.id ci.location (List.map fst ci.goods) (ci.netto / 1.0<t>) ci.overloaded)
 
