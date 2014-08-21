@@ -104,19 +104,19 @@ module Example =
             do! Context.add id ev
             return id }
 
-    let moveTo (l : Location) (id : Id) : Context.Computation<unit> =
+    let shipTo (l : Location) (id : Id) : Context.Computation<unit> =
         context {
             do! assertExists id
             let ev = MovedTo l
             do! Context.add id ev }
 
-    let loadGood (g : Goods) (w : Weight) (id : Id) : Context.Computation<unit> =
+    let load (g : Goods) (w : Weight) (id : Id) : Context.Computation<unit> =
         context {
             do! assertExists id
             let ev = Loaded (g,w)
             do! Context.add id ev }
 
-    let unloadGood (g : Goods) (w : Weight) (id : Id) : Context.Computation<unit> =
+    let unload (g : Goods) (w : Weight) (id : Id) : Context.Computation<unit> =
         context {
             let! loaded = Context.playback (goodWeight g) id
             if w > loaded then failwith "cannot unload more than is loaded"
@@ -135,11 +135,12 @@ module Example =
         let container = 
             context {
                 let! container = createContainer
-                do!  container |> moveTo     "Bremen"
-                do!  container |> loadGood   "Tomaten" (toT 3500.0<kg>)
-                do!  container |> moveTo     "Hamburg"
-                do!  container |> unloadGood "Tomaten" 2.5<t>
-                do!  container |> loadGood   "Fisch" 20.0<t>
+                do!  container |> shipTo "Barcelona"
+                do!  container |> load   "Tomatoes" (toT 3500.0<kg>)
+                do!  container |> shipTo "Hamburg"
+                do!  container |> unload "Tomatoes"         2.5<t>
+                do!  container |> load   "Fish"            20.0<t>
+                do!  container |> shipTo "Hongkong"
                 return container
             } |> Context.evalUsing store
 
@@ -159,7 +160,6 @@ module Main =
         // reset the Database
         using (new EntityFramework.EventStore.StoreContext(connection)) (fun c -> c.ClearTables())
 
-        // let created = EntityFramework.EventStore.createDatabase connection
         Example.run connection
         printfn "Return to close"
         Console.ReadLine() |> ignore
