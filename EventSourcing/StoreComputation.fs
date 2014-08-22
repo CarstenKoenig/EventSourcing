@@ -1,12 +1,7 @@
 ﻿namespace EventSourcing
 
-open System
-
-type EntityId = Guid
-type Version  = int
-
 type ITransactionScope =
-    inherit IDisposable
+    inherit System.IDisposable
 
 type IEventRepository =
     abstract beginTransaction : unit -> ITransactionScope
@@ -87,8 +82,7 @@ module StoreComputation =
             rep.commit trans
             res
         with
-        | _ as ex ->
-            Console.WriteLine ("Error: {0}", ex)
+        | _ ->
             rep.rollback trans
             reraise()
             

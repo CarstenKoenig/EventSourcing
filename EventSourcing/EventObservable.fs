@@ -1,9 +1,8 @@
 ﻿namespace EventSourcing
 
-open System 
-
 module internal EventObservable =
 
+    open System
     open System.Collections.Generic
 
     type IEventObservable =
@@ -55,11 +54,12 @@ module internal EventObservable =
             lock handlers (fun () ->
                 let t = typeof<'e>
                 let list =
-                    match handlers.TryGetValue t with
-                    | (true, l) -> l
-                    | (false,_) -> let l = new List<_>()
-                                   handlers.Add (t, l)
-                                   l
+                    match handlers with
+                    | Contains t l -> l
+                    | _ ->
+                        let l = new List<_>()
+                        handlers.Add (t, l)
+                        l
                 let h' (o : obj) = h (unbox o)
                 list.Add h'
                 { new IDisposable with
@@ -67,9 +67,9 @@ module internal EventObservable =
         let notify (event : 'e) = 
             lock handlers (fun () ->
                 let t = typeof<'e>
-                match handlers.TryGetValue t with
-                | (true, l) -> l :> (obj -> unit) seq
-                | (false,_) -> Seq.empty
+                match handlers with
+                | Contains t l -> l :> (obj -> unit) seq
+                | _            -> Seq.empty
                 |> Seq.iter (fun h -> h (box event)))
 
         { new IEventObservable with
