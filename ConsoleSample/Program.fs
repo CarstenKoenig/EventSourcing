@@ -130,6 +130,16 @@ module Example =
         // let store = EntityFramework.EventStore.create dbName
         let store = Repositories.InMemory.create() |> EventStore.fromRepository
 
+        // subscribe an event-handler for logging...
+        use unsubscribe = 
+            store.subscribe (
+                function
+                | (id, Created _)      -> sprintf "container %A created" id
+                | (id, MovedTo l)      -> sprintf "container %A moved to %s"  id l
+                | (id, Loaded (g,w))   -> sprintf "container %A loaded %.2ft of %s" id (w / 1.0<t>) g
+                | (id, Unloaded (g,w)) -> sprintf "container %A UNloaded %.2ft of %s" id (w / 1.0<t>) g
+                >> Console.WriteLine)
+
         // insert some sample history
         let container = 
             context {
@@ -142,6 +152,8 @@ module Example =
                 do!  container |> shipTo "Hongkong"
                 return container } 
             |> Context.evalUsing store
+
+        Console.WriteLine("\n\nRESULT\n")
 
         // aggregate the history into a container-info and print it
         container 

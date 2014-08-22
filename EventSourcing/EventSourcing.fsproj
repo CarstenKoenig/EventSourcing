@@ -42,10 +42,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Projections.fs" />
-    <Compile Include="Repositories.fs" />
     <Compile Include="StoreComputation.fs" />
+    <Compile Include="EventObservable.fs" />
     <Compile Include="EventStores.fs" />
     <Compile Include="Context.fs" />
+    <Compile Include="Repositories.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

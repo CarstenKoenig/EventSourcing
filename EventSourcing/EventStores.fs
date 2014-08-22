@@ -8,6 +8,7 @@ open System
 type IEventStore =
     abstract exists    : EntityId -> bool
     abstract run       : StoreComputation.T<'a> -> 'a
+    abstract subscribe : ((EntityId * 'e) -> unit) -> IDisposable
 
 module EventStore =
 
@@ -23,7 +24,10 @@ module EventStore =
         es.exists(id)
 
     let fromRepository (rep : IEventRepository) : IEventStore =
+        let eventObs = EventObservable.create ()
+        let rep' = EventObservable.wrap rep eventObs
         { new IEventStore with
-            member __.exists id = rep.exists id
-            member __.run p     = p |> StoreComputation.executeIn rep
+            member __.exists id   = rep.exists id
+            member __.run p       = p |> StoreComputation.executeIn rep'
+            member __.subscribe h = eventObs.addHandler h
         }
