@@ -90,36 +90,36 @@ module Example =
     // *************************
     // commands:
 
-    let assertExists (id : Id) : Context.Computation<unit> =
-        context {
-            let! containerExists = Context.exists id
+    let assertExists (id : Id) : StoreComputation.T<unit> =
+        store {
+            let! containerExists = StoreComputation.exists id
             if not containerExists then failwith "container not found" }
 
-    let createContainer : Context.Computation<Id> =
-        context {
+    let createContainer : StoreComputation.T<Id> =
+        store {
             let id = Id.NewGuid()
             let ev = Created id
-            do! Context.add id ev
+            do! StoreComputation.add id ev
             return id }
 
-    let shipTo (l : Location) (id : Id) : Context.Computation<unit> =
-        context {
+    let shipTo (l : Location) (id : Id) : StoreComputation.T<unit> =
+        store {
             do! assertExists id
             let ev = MovedTo l
-            do! Context.add id ev }
+            do! StoreComputation.add id ev }
 
-    let load (g : Goods) (w : Weight) (id : Id) : Context.Computation<unit> =
-        context {
+    let load (g : Goods) (w : Weight) (id : Id) : StoreComputation.T<unit> =
+        store {
             do! assertExists id
             let ev = Loaded (g,w)
-            do! Context.add id ev }
+            do! StoreComputation.add id ev }
 
-    let unload (g : Goods) (w : Weight) (id : Id) : Context.Computation<unit> =
-        context {
-            let! loaded = Context.restore (goodWeight g) id
+    let unload (g : Goods) (w : Weight) (id : Id) : StoreComputation.T<unit> =
+        store {
+            let! loaded = StoreComputation.restore (goodWeight g) id
             if w > loaded then failwith "cannot unload more than is loaded"
             let ev = Unloaded (g,w)
-            do! Context.add id ev }
+            do! StoreComputation.add id ev }
 
     // ******************
     // example
@@ -128,11 +128,11 @@ module Example =
     let run dbName =
 
         // let store = EntityFramework.EventStore.create dbName
-        let store = Repositories.InMemory.create() |> EventStore.fromRepository
+        let eventStore = Repositories.InMemory.create() |> EventStore.fromRepository
 
         // subscribe an event-handler for logging...
         use unsubscribe = 
-            store.subscribe (
+            eventStore.subscribe (
                 function
                 | (id, Created _)      -> sprintf "container %A created" id
                 | (id, MovedTo l)      -> sprintf "container %A moved to %s"  id l
@@ -142,7 +142,7 @@ module Example =
 
         // insert some sample history
         let container = 
-            context {
+            store {
                 let! container = createContainer
                 do!  container |> shipTo "Barcelona"
                 do!  container |> load   "Tomatoes" (toT 3500.0<kg>)
@@ -151,14 +151,14 @@ module Example =
                 do!  container |> load   "Fish"            20.0<t>
                 do!  container |> shipTo "Hongkong"
                 return container } 
-            |> Context.evalUsing store
+            |> EventStore.execute eventStore
 
         Console.WriteLine("\n\nRESULT\n")
 
         // aggregate the history into a container-info and print it
         container 
-        |> Context.restore containerInfo 
-        |> Context.evalUsing store
+        |> StoreComputation.restore containerInfo 
+        |> EventStore.execute eventStore
         |> (fun ci -> printfn "Container %A currently in %s, loaded with: %A for a total of %.2ft is overloaded: %A" 
                         ci.id ci.location (List.map fst ci.goods) (ci.netto / 1.0<t>) ci.overloaded)
 

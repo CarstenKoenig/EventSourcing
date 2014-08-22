@@ -31,3 +31,6 @@ module EventStore =
             member __.run p       = p |> StoreComputation.executeIn rep'
             member __.subscribe h = eventObs.addHandler h
         }
+
+    let execute (es : IEventStore) (comp : StoreComputation.T<'a>) =
+        es.run comp

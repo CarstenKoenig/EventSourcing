@@ -23,7 +23,7 @@ module StoreComputation =
     let private updateUsed (id : EntityId, ver : Version) (u : UsedEntities) : UsedEntities =
         match u.TryFind id with
         | None   -> u.Add (id, ver)
-        | Some _ -> u
+        | Some _ -> u.Remove id |> Map.add id ver
 
     let private getUsed (id : EntityId) (u : UsedEntities) : Version option =
         u.TryFind id
@@ -63,6 +63,10 @@ module StoreComputation =
     // *********************
     // public operations
 
+    let exists (id : EntityId) : T<bool> =
+        create (fun r _ u ->
+            (r.exists id, u))
+
     let restore (p : Projection.T<'e,_,'a>) (id : EntityId) : T<'a> =
         create (fun r t u ->
             let (a, ver) = r.restore t id p
@@ -83,7 +87,8 @@ module StoreComputation =
             rep.commit trans
             res
         with
-        | _ ->
+        | _ as ex ->
+            Console.WriteLine ("Error: {0}", ex)
             rep.rollback trans
             reraise()
             

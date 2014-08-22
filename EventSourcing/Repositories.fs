@@ -17,7 +17,8 @@ module InMemory =
             | (false, _)    -> let l = List<_>()
                                cache.Add (id, (l,0))
                                (l,0)
-            |> fun (l, v) -> if Option.isSome ver && v <> ver.Value then failwith "concurrency check failed"
+            |> fun (l, v) -> if Option.isSome ver && v <> ver.Value 
+                                then failwith "concurrency check failed"
                              l.Add (box e)
                              let v' = v+1
                              cache.[id] <- (l, v')
