@@ -42,6 +42,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Projections.fs" />
+    <Compile Include="Repositories.fs" />
+    <Compile Include="StoreComputation.fs" />
     <Compile Include="EventStores.fs" />
     <Compile Include="Context.fs" />
   </ItemGroup>

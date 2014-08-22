@@ -1,4 +1,4 @@
-﻿namespace EventSourcing.EntityFramework
+﻿namespace EventSourcing.Repositories
 
 open System
 open EventSourcing
@@ -8,7 +8,7 @@ open Newtonsoft.Json
 // implements an event-store using Microsofts EntityFramework
 // the events are serialized using JSON.net
 
-module EventStore =
+module EntityFramework =
 
     open System.Data.Entity
     open System.ComponentModel.DataAnnotations
@@ -54,15 +54,18 @@ module EventStore =
             this.Database.ExecuteSqlCommand("DELETE FROM EventRows")
             |> ignore
 
-        member this.EntityIds() : Collections.Generic.HashSet<_> =
-            new Collections.Generic.HashSet<_>(this.EventRows.Select(fun row -> row.entityId))
+        member this.Exists(id : EntityId) : bool =
+            this.EventRows.Any (fun row -> row.entityId = id)
 
-        member this.Add (id : EntityId, event : 'e) : EventRow =
+        member this.Add (id : EntityId, addAfter : Version option, event : 'e) : Version =
             let versions = this.EventRows
                               .Where(fun e -> e.entityId = id)
                               .OrderByDescending(fun e -> e.version)
                               .Select(fun e -> e.version);
-            let version = if Seq.isEmpty versions then 1 else Seq.head versions + 1
+            let lastVersion = if Seq.isEmpty versions then 0 else Seq.head versions
+            if Option.isSome addAfter && lastVersion <> addAfter.Value then
+                failwith (sprintf "concurrency-error: expected to add event after version %d but found last version to be %d" addAfter.Value lastVersion)
+            let version = lastVersion + 1
             let ereignis = 
                 this.EventRows.Add(
                     { number        = -1
@@ -71,34 +74,57 @@ module EventStore =
                     ; version       = version
                     ; jsonData      = serialize event })
             if this.SaveChanges() <> 1 then failwith "a EventRow was not saved"
-            ereignis
+            version
 
-        member this.LoadProjection(p : Projection.T<_,_,'a>, id : EntityId) : 'a =
+        member this.LoadProjection(p : Projection.T<_,_,'a>, id : EntityId) : ('a * Version) =
+            let pAndVer = p <|> Projection.sumBy (fun _ -> Some 1)
             this.EventRows
                 .Where(fun e -> e.entityId = id)
                 .OrderBy(fun e -> e.version)
                 .Select(fun e -> e.jsonData)
                 .AsEnumerable()
             |> Seq.map deserialize
-            |> Projection.fold p
+            |> Projection.fold pAndVer
 
-    let create (connection) : IEventStore =
+    type TransactionScope internal (connection, useTransactions) =
+        let context = new StoreContext (connection)
+        let trans = if useTransactions then Some <| context.Database.BeginTransaction() else None
+
+        member this.execute (f : StoreContext -> 'a) = 
+            f context
+        member this.Commit() = 
+            trans |> Option.iter (fun t -> t.Commit())
+        member this.Rollback() = 
+            trans |> Option.iter (fun t -> t.Rollback())
+
+        interface ITransactionScope with
+            member __.Dispose() = 
+                trans |> Option.iter (fun t -> t.Dispose())
+                context.Dispose()
+
+    let create (connection, useTransactions : bool) : IEventRepository =
         
         let useContext (f : StoreContext -> 'a) =
             use context = new StoreContext(connection)
             f context
 
-        let entityIds () =
-            useContext (fun c -> c.EntityIds())
+        let useTransaction (f : StoreContext -> 'a) (t : TransactionScope) =
+            t.execute f
 
+        let exists id =
+            useContext (fun c -> c.Exists id)
 
-        let addEvent (id : EntityId) (e : 'e) =
-            useContext (fun c -> c.Add (id, e)) |> ignore
+        let addEvent (id : EntityId) (ver : Version option) (e : 'e) =
+            useTransaction (fun c -> c.Add (id, ver, e))
 
-        let restore (p : Projection.T<'e,_,'a>) (id : EntityId) : 'a =
-            useContext (fun c -> c.LoadProjection (p, id))
+        let restore (p : Projection.T<'e,_,'a>) (id : EntityId) =
+            useTransaction (fun c -> c.LoadProjection (p, id))
 
-        { new IEventStore with
-            member __.entityIds ()  = entityIds ()
-            member __.add id ev     = addEvent id ev
-            member __.restore p id  = restore p id }
+        { new IEventRepository with
+            member __.add t id ver event  = addEvent id ver event (t :?> TransactionScope)
+            member __.exists id           = exists id
+            member __.restore t id p      = restore p id (t :?> TransactionScope)
+            member __.beginTransaction () = new TransactionScope (connection, useTransactions) :> ITransactionScope
+            member __.rollback t          = (t :?> TransactionScope).Rollback()
+            member __.commit   t          = (t :?> TransactionScope).Commit()
+        }

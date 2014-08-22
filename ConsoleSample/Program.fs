@@ -128,7 +128,7 @@ module Example =
     let run dbName =
 
         // let store = EntityFramework.EventStore.create dbName
-        let store = EventStore.InMemory.create ()
+        let store = Repositories.InMemory.create() |> EventStore.fromRepository
 
         // insert some sample history
         let container = 

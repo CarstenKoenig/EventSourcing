@@ -2,48 +2,28 @@
 
 open System 
 
-type EntityId = Guid
-
 /// a eventstore should provide
-/// methods to add events
-/// and playback events using a projection
+/// methods to run computations
+/// and check if a entity exists
 type IEventStore =
-    abstract entityIds : unit -> Collections.Generic.HashSet<EntityId>
-    abstract add       : Guid -> 'e -> unit
-    abstract restore   : Projection.T<'e,_,'a> -> Guid -> 'a
+    abstract exists    : EntityId -> bool
+    abstract run       : StoreComputation.T<'a> -> 'a
 
 module EventStore =
 
     let add (id : EntityId) (e : 'e) (es : IEventStore) =
-        es.add id e
+        StoreComputation.add id e
+        |> es.run
 
     let restore (p : Projection.T<_,_,'a>) (id : EntityId) (es : IEventStore) : 'a =
-        es.restore p id
+        StoreComputation.restore p id
+        |> es.run
 
     let exists (id : EntityId) (es : IEventStore) =
-        es.entityIds().Contains id
+        es.exists(id)
 
-    module InMemory =
-
-        open System.Collections.Generic
-
-        let create () : IEventStore =
-            let cache = new Dictionary<EntityId, List<obj>>()
-            let ids () = lock cache (fun () -> cache.Keys |> fun ks -> new HashSet<_>(ks))
-            let add id e = lock cache (fun () -> 
-                match cache.TryGetValue id with
-                | (true, l)  -> l
-                | (false, _) -> let l = List<_>()
-                                cache.Add (id, l)
-                                l
-                |> fun l -> l.Add (box e))
-            let play p id = lock cache (fun () ->
-                match cache.TryGetValue id with
-                | (true, l)  -> l :> obj seq
-                | (false, _) -> Seq.empty
-                |> Seq.map unbox
-                |> Projection.fold p)
-            { new IEventStore with
-                member __.add id e       = add id e
-                member __.restore p id   = play p id
-                member __.entityIds ()   = ids () }
+    let fromRepository (rep : IEventRepository) : IEventStore =
+        { new IEventStore with
+            member __.exists id = rep.exists id
+            member __.run p     = p |> StoreComputation.executeIn rep
+        }
