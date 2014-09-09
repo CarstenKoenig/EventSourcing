@@ -61,18 +61,22 @@ module Example =
     let goods =
         Projection.createWithProjection Map.toList Map.empty (fun m ev ->
             match ev with
-            | Loaded (g,w) ->   match m.TryFind g with
-                                | Some w' -> m |> Map.remove g |> Map.add g (w+w')
-                                | None    -> m |> Map.add g w
-            | Unloaded (g,w) -> match m.TryFind g with
-                                | Some cur -> if cur < w 
-                                                then failwith (sprintf "tried to unload %.2ft %s but there are only %.2ft" (cur / 1.0<t>) g (w / 1.0<t>)) 
-                                              elif cur = w
-                                                then m |> Map.remove g
-                                              else m |> Map.remove g |> Map.add g (cur-w)
-                                | None    -> failwith (sprintf "tried to unload %.2ft non-loaded goods %s" (w / 1.0<t>) g)
-            | _            -> m
-            )
+            | Loaded (g,w) ->   
+                match m.TryFind g with
+                | Some w' -> m |> Map.remove g |> Map.add g (w+w')
+                | None    -> m |> Map.add g w
+            | Unloaded (g,w) -> 
+                match m.TryFind g with
+                | Some cur -> 
+                    if cur < w then
+                        failwith (sprintf "tried to unload %.2ft %s but there are only %.2ft" (cur / 1.0<t>) g (w / 1.0<t>)) 
+                    elif cur = w then
+                        m |> Map.remove g
+                    else
+                        m |> Map.remove g |> Map.add g (cur-w)
+                | None -> 
+                    failwith (sprintf "tried to unload %.2ft non-loaded goods %s" (w / 1.0<t>) g)
+            | _ -> m)
  
     // of course we can compose these:
  
