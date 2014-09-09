@@ -71,15 +71,15 @@ module Projection =
             | _                -> acc)
 
     let (<*>) = sequence
-    let (<?>) = map
+    let ($)   = map
 
     let inline pair (a : T<'e,'i1,'a>) (b : T<'e,'i2,'b>) : T<'e,'i1*'i2,'a*'b> =
-        (fun a b -> (a,b)) <?> a <*> b
+        (fun a b -> (a,b)) $ a <*> b
 
 
 [<AutoOpen>]
 module ProjectionOperations =
     open Projection
     let (<*>) = sequence
-    let (<?>) = map
+    let ($)   = map
     let (<|>) = pair
