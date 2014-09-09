@@ -1,6 +1,6 @@
 ﻿namespace EventSourcing
 
-open System 
+open EventObservable
 
 /// a eventstore should provide
 /// methods to run computations
@@ -8,7 +8,7 @@ open System
 type IEventStore =
     abstract exists    : EntityId -> bool
     abstract run       : StoreComputation.T<'a> -> 'a
-    abstract subscribe : ((EntityId * 'e) -> unit) -> IDisposable
+    abstract subscribe : 'e EventHandler -> System.IDisposable
 
 module EventStore =
 
