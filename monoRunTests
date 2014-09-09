@@ -1,0 +1,1 @@
+mono ~/bin/xunit ./EventSourcing.Tests/bin/Debug/EventSourcing.Tests.dll

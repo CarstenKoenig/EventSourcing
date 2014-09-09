@@ -3,12 +3,6 @@
   <MonoDevelop.Ide.Workbench ActiveDocument="EventSourcing/Projections.fs">
     <Files>
       <File FileName="EventSourcing/Projections.fs" Line="1" Column="1" />
-      <File FileName="EventSourcing/Repositories.fs" Line="1" Column="1" />
-      <File FileName="EventSourcing/EventStores.fs" Line="1" Column="1" />
-      <File FileName="EventSourcing/StoreComputation.fs" Line="1" Column="1" />
-      <File FileName="EventSourcing/EventObservable.fs" Line="1" Column="1" />
-      <File FileName="ConsoleSample/Program.fs" Line="1" Column="1" />
-      <File FileName="EventSourcing/Common.fs" Line="9" Column="9" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
