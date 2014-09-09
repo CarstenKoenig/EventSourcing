@@ -12,6 +12,9 @@ type IEventStore =
 
 module EventStore =
 
+    let subscribe (h : 'e EventHandler) (es : IEventStore) : System.IDisposable =
+        es.subscribe h
+
     let add (id : EntityId) (e : 'e) (es : IEventStore) =
         StoreComputation.add id e
         |> es.run

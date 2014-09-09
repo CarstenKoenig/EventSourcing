@@ -102,6 +102,8 @@ module EntityFramework =
                 trans |> Option.iter (fun t -> t.Dispose())
                 context.Dispose()
 
+    /// creates an event-repository using the given connection-string to form a entity-framework DbContext
+    /// the used DB should contain a EventRows-table consisting holding EventRow data
     let create (connection, useTransactions : bool) : IEventRepository =
         
         let useContext (f : StoreContext -> 'a) =
