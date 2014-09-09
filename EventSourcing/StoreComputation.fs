@@ -1,16 +1,5 @@
 ﻿namespace EventSourcing
 
-type ITransactionScope =
-    inherit System.IDisposable
-
-type IEventRepository =
-    abstract beginTransaction : unit -> ITransactionScope
-    abstract commit           : ITransactionScope -> unit
-    abstract rollback         : ITransactionScope -> unit
-    abstract exists           : EntityId -> bool
-    abstract restore          : ITransactionScope -> EntityId -> Projection.T<'e,_,'a> -> ('a * Version)
-    abstract add              : ITransactionScope -> EntityId -> Version option -> 'a -> Version
-
 module StoreComputation =
 
     type UsedEntities = Map<EntityId, Version>
@@ -64,14 +53,14 @@ module StoreComputation =
 
     let restore (p : Projection.T<'e,_,'a>) (id : EntityId) : T<'a> =
         create (fun r t u ->
-            let (a, ver) = r.restore t id p
+            let (a, ver) = r.restore (t, id, p)
             let u'       = u |> updateUsed (id, ver)
             (a, u'))
 
     let add (id : EntityId) (event : 'e) : T<unit> =
         create (fun r t u ->
             let ver  = u |> getUsed id
-            let ver' = r.add t id ver event
+            let ver' = r.add (t, id, ver, event)
             let u'   = u |> updateUsed (id, ver')
             ((), u'))
 
@@ -82,6 +71,9 @@ module StoreComputation =
             rep.commit trans
             res
         with
+        | :? HandlerException ->
+            // don't rollback on Handler-Exceptions
+            reraise()
         | _ ->
             rep.rollback trans
             reraise()

@@ -9,6 +9,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "EventSourcing.EntityFramewo
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ConsoleSample", "ConsoleSample\ConsoleSample.fsproj", "{61CAB508-ED6B-418C-8F5D-70F35F37BB4D}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "EventSourcing.Tests", "EventSourcing.Tests\EventSourcing.Tests.fsproj", "{7C405C89-F146-494C-BC83-287ED2C888B6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{61CAB508-ED6B-418C-8F5D-70F35F37BB4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61CAB508-ED6B-418C-8F5D-70F35F37BB4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61CAB508-ED6B-418C-8F5D-70F35F37BB4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C405C89-F146-494C-BC83-287ED2C888B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C405C89-F146-494C-BC83-287ED2C888B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C405C89-F146-494C-BC83-287ED2C888B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C405C89-F146-494C-BC83-287ED2C888B6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

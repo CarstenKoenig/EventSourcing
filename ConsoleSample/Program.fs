@@ -43,7 +43,7 @@ module Example =
  
     /// the netto-weight, assuming a container itself is 2.33t
     let nettoWeight = 
-        ((+) 2.33<t>) <?> Projection.sumBy (
+        ((+) 2.33<t>) $ Projection.sumBy (
             function
             | Loaded (_,w)   -> Some w
             | Unloaded (_,w) -> Some (-w)
@@ -77,7 +77,7 @@ module Example =
     // of course we can compose these:
  
     /// is the container heavier than it should be? (assuming the max. weight is 28t)
-    let isOverloaded = (fun netto -> netto > 28.0<t>) <?> nettoWeight
+    let isOverloaded = (fun netto -> netto > 28.0<t>) $ nettoWeight
  
     /// collects information about the current state of a certain container
     type ContainerInfo = { id : Id; location : Location; netto : Weight; overloaded : bool; goods : (Goods * Weight) list }
@@ -85,7 +85,7 @@ module Example =
  
     /// current container-info
     let containerInfo =
-        createInfo <?> id <*> location <*> nettoWeight <*> isOverloaded <*> goods
+        createInfo $ id <*> location <*> nettoWeight <*> isOverloaded <*> goods
 
     // *************************
     // commands:

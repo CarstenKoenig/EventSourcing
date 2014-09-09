@@ -41,8 +41,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Common.fs" />
     <Compile Include="Projections.fs" />
+    <Compile Include="Common.fs" />
     <Compile Include="StoreComputation.fs" />
     <Compile Include="EventObservable.fs" />
     <Compile Include="EventStores.fs" />

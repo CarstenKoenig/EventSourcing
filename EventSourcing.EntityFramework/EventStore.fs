@@ -121,10 +121,10 @@ module EntityFramework =
             useTransaction (fun c -> c.LoadProjection (p, id))
 
         { new IEventRepository with
-            member __.add t id ver event  = addEvent id ver event (t :?> TransactionScope)
-            member __.exists id           = exists id
-            member __.restore t id p      = restore p id (t :?> TransactionScope)
-            member __.beginTransaction () = new TransactionScope (connection, useTransactions) :> ITransactionScope
-            member __.rollback t          = (t :?> TransactionScope).Rollback()
-            member __.commit   t          = (t :?> TransactionScope).Commit()
+            member __.add (t,id,ver,event) = addEvent id ver event (t :?> TransactionScope)
+            member __.exists id            = exists id
+            member __.restore (t,id,p)     = restore p id (t :?> TransactionScope)
+            member __.beginTransaction ()  = new TransactionScope (connection, useTransactions) :> ITransactionScope
+            member __.rollback t           = (t :?> TransactionScope).Rollback()
+            member __.commit   t           = (t :?> TransactionScope).Commit()
         }

@@ -39,9 +39,9 @@ module InMemory =
                             member __.Dispose() = () }
 
         { new IEventRepository with
-            member __.add _ id ver event  = add (id,ver) event
-            member __.exists id           = exists id
-            member __.restore _ id p      = restore p id
-            member __.beginTransaction () = emptyScope
-            member __.rollback _          = failwith "this repository does not support rollbacks - sorry"
-            member __.commit   _          = () }
+            member __.add (_,id,ver,event) = add (id,ver) event
+            member __.exists id            = exists id
+            member __.restore (_, id, p)   = restore p id
+            member __.beginTransaction ()  = emptyScope
+            member __.rollback _           = failwith "this repository does not support rollbacks - sorry"
+            member __.commit   _           = () }
