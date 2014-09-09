@@ -77,23 +77,34 @@ But instead of just wrapping the primitive operations it will use store-computat
 
 The main functions are:
 
+### subscribe an event-handler
+
     EventStore.subscribe (h : 'e EventHandler) (es : IEventStore) : System.IDisposable
 Subscribes an event-handler `h` to the event-store `es`. If you dispose the result the handler will be unsubscribed.
+
+### execute a store-computation
 
     EventStore.execute (es : IEventStore) (comp : StoreComputation.T<'a>)
 Executes an store-computation `comp` within the store `es` returing it's result.
 If there is an exception thrown while running the computation `rollback` at the underlying repository will be called
 and the exception will be passed to the caller.
 
-        
+### adding an event
+
     EventStore.add (id : EntityId) (e : 'e) (es : IEventStore)
 Adds an event `e` to the entity with id `id` using the event-store `es`
+
+### restoring from a projection
 
     EventStore.restore (p : Projection.T<_,_,'a>) (id : EntityId) (es : IEventStore) : 'a
 Queries data from the event-source for the entity with id `id` from the event-store `es` using a projection `p`
 
+### check if an entity exists
+
     EventStore.exists (id : EntityId) (es : IEventStore)
 Checks if an event with id `id` exists in the event-store `es`
+
+### create an store from a repository
 
     EventStore.fromRepository (rep : IEventRepository) : IEventStore
 Creates an event-store from a repositorty `rep` - all queries and commands will use this repostiory and it's
@@ -106,22 +117,34 @@ This mechanism will keep Entity-Versions in check and try to ensure concurency i
 
 The primitive building blocks are:
 
+### check if an entity exists
+
     StoreComputation.exists (id : EntityId) : T<bool>
 Checks if there is an entity with this id in the store.
+
+### restoring data using a projection
 
     StoreComputation.restore (p : Projection.T<'e,_,'a>) (id : EntityId) : T<'a>
 Uses a projection `p` to query data from the event-source of an entity with id `id`.
 
+### adding an event 
+
     StoreComputation.add (id : EntityId) (event : 'e) : T<unit>
 Adds an event`event` to the entity with id `id`
+
+### executing an computation using a repository
 
     StoreComutation.executeIn (rep : IEventRepository) (comp : T<'a>) : 'a
 Executes an computation `comp` using the `rep` repository returing the computations result.
 This will take care of the event-version and call the repositories `comit` on success or `rollback` if an exception occured.
 
+You should not call this method yourself - instead you should use `EventStore.execute`
+
+### monadic builder support
+
 You can use the `store` computational-expression to build up more complexe computations.
 
-### Example
+#### Example
 
     let assertExists (id : Id) : StoreComputation.T<unit> =
         store {
