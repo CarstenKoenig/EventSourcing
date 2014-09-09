@@ -6,6 +6,7 @@ module InMemory =
 
     open System.Collections.Generic
 
+    /// creates an in-memory event-repository
     let create () : IEventRepository =
         let cache = new Dictionary<EntityId, (List<obj>*Version)>()
 

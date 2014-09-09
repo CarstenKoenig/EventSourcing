@@ -12,20 +12,25 @@ type IEventStore =
 
 module EventStore =
 
+    /// subscribes an event-handler (for a certain event-type) to the event-store
     let subscribe (h : 'e EventHandler) (es : IEventStore) : System.IDisposable =
         es.subscribe h
 
+    /// adds an event for a entity into the store
     let add (id : EntityId) (e : 'e) (es : IEventStore) =
         StoreComputation.add id e
         |> es.run
 
+    /// restores data from a eventstore for a given entity-id using a projection
     let restore (p : Projection.T<_,_,'a>) (id : EntityId) (es : IEventStore) : 'a =
         StoreComputation.restore p id
         |> es.run
 
+    /// checks if events exists for the given entity-id inside the store
     let exists (id : EntityId) (es : IEventStore) =
         es.exists(id)
 
+    /// creates an event-store from a repository
     let fromRepository (rep : IEventRepository) : IEventStore =
         let eventObs = EventObservable.create ()
         let rep' = EventObservable.wrap rep eventObs
@@ -35,5 +40,6 @@ module EventStore =
             member __.subscribe h = eventObs.addHandler h
         }
 
+    /// executes an store-computation using an event-store
     let execute (es : IEventStore) (comp : StoreComputation.T<'a>) =
         es.run comp
