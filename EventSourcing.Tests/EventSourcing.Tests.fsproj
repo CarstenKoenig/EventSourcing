@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="Common.fs" />
     <Compile Include="EventStoreTests.fs" />
+    <Compile Include="IntegrationTests.fs" />
     <Content Include="packages.config" />
     <Content Include="app.config" />
   </ItemGroup>
