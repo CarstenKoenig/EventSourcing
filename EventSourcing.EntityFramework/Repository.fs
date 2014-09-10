@@ -7,7 +7,6 @@ open Newtonsoft.Json
 
 // implements an event-store using Microsofts EntityFramework
 // the events are serialized using JSON.net
-
 module EntityFramework =
 
     open System.Data.Entity

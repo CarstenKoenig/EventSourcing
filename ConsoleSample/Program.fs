@@ -173,6 +173,8 @@ module Main =
     let main argv = 
         let connection = "TestDb"
 
+        EventSourcing.Repositories.Sqlite.testRun()
+
         // reset the Database
         using (new Repositories.EntityFramework.StoreContext(connection)) (fun c -> c.ClearTables())
 
