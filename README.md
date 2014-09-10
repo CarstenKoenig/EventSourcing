@@ -132,6 +132,16 @@ Uses a projection `p` to query data from the event-source of an entity with id `
     StoreComputation.add (id : EntityId) (event : 'e) : T<unit>
 Adds an event`event` to the entity with id `id`
 
+### ignoring the next concurrency check for an entity
+
+    StoreComputation.ignoreNextConccurrencyCheckFor (id : EntityId) : T<unit>
+Normaly each `add` will give the currently known version of the entity to the repository 
+(which should check if this is the same as the last events-version).
+If another event got inserted concurrently this will yield an exception and the transaction will be rolled-back.
+
+You can dissable this behaviour by using this function - it will remove the known entity-version so that the next `add` will ignore
+any concurrency issues.
+
 ### executing an computation using a repository
 
     StoreComutation.executeIn (rep : IEventRepository) (comp : T<'a>) : 'a

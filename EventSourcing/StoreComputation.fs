@@ -10,6 +10,9 @@ module StoreComputation =
         | None   -> u.Add (id, ver)
         | Some _ -> u.Remove id |> Map.add id ver
 
+    let private removeUsed (id : EntityId) (u : UsedEntities) : UsedEntities =
+        u.Remove id
+
     let private latestUsedVersion (id : EntityId) (u : UsedEntities) : Version option =
         u.TryFind id
 
@@ -57,9 +60,8 @@ module StoreComputation =
     /// tracks the latest version of this entity
     let restore (p : Projection.T<'e,_,'a>) (id : EntityId) : T<'a> =
         create (fun r t u ->
-            let (a, ver) = r.restore (t, id, p)
-            let u'       = u |> updateUsed (id, ver)
-            (a, u'))
+            let (a, _) = r.restore (t, id, p)
+            (a, u))
 
     /// adds another event for a entity into the repository
     /// using the internal used entity-version (concurrency-check)
@@ -68,6 +70,13 @@ module StoreComputation =
             let ver  = u |> latestUsedVersion id
             let ver' = r.add (t, id, ver, event)
             let u'   = u |> updateUsed (id, ver')
+            ((), u'))
+
+    /// dissables the next concurrency check for an entity by removing
+    /// the cached version
+    let ignoreNextConccurrencyCheckFor (id : EntityId) : T<unit> =
+        create (fun r t u ->
+            let u'   = u |> removeUsed id
             ((), u'))
 
     /// executes a store-computation using the given repository

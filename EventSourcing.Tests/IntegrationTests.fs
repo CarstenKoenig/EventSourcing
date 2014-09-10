@@ -123,4 +123,33 @@ module ``integration: using a simple domain with an inmemory-store`` =
             }
         (fun () -> sut |> run workflow |> ignore) |> should throw typeof<EntityConcurrencyException>
 
+    [<Fact>]
+    let ``a store-computation should throw an error if another event got inserted while running - even if there was an read after``() =
+        let sut = create ()
+        let id = sut |> createNewNumber 0
+        let insertAnotherOne() = sut |> addNumber id 5
+        let workflow =  
+            store {
+                do! StoreComputation.add id (Added 1)
+                insertAnotherOne()
+                let! _ = StoreComputation.restore currentValueP id
+                do! StoreComputation.add id (Added 2)
+                return! StoreComputation.restore currentValueP id
+            }
+        (fun () -> sut |> run workflow |> ignore) |> should throw typeof<EntityConcurrencyException>
+
+    [<Fact>]
+    let ``a store-computation should not throw an error if it was suppressed even if another event got inserted while running``() =
+        let sut = create ()
+        let id = sut |> createNewNumber 0
+        let insertAnotherOne() = sut |> addNumber id 5
+        let workflow =  
+            store {
+                do! StoreComputation.add id (Added 1)
+                insertAnotherOne()
+                do! StoreComputation.ignoreNextConccurrencyCheckFor id
+                do! StoreComputation.add id (Added 2)
+                return! StoreComputation.restore currentValueP id
+            }
+        sut |> run workflow |> should equal 8
 
