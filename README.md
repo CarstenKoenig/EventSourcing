@@ -166,3 +166,10 @@ You can use the `store` computational-expression to build up more complexe compu
             do! assertExists id
             let ev = MovedTo l
             do! StoreComputation.add id ev }
+
+
+## Remarks
+
+I'm not to happy with the EF repository I included. LocalDB for example is not working on Linux/Mono (or I am not aware of). I would rather get a Sqlite backend in there but I'm still searching for a good (maybe even F# happy) framework using on both Mono and .net.
+
+If someone knows a good one please let me know - or even better send me a pull-request :D
