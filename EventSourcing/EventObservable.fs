@@ -13,7 +13,7 @@ module internal EventObservable =
         abstract addHandler : 'e EventHandler -> IDisposable
         abstract publish    : EntityId * 'e -> unit
 
-    type private TransactionScope (rep : IEventRepository, obs : IEventObservable) =
+    type private ObservableTransactionScope (rep : IEventRepository, obs : IEventObservable) =
         let newEvents = List<_>()
         let invoke f = try f () with _ as ex -> raise (HandlerException ex)
         let transScope = rep.beginTransaction ()
@@ -45,23 +45,16 @@ module internal EventObservable =
                 transScope.Dispose()
 
     let wrap (rep : IEventRepository) (src : IEventObservable) : IEventRepository =
-        let beginTrans () = new TransactionScope (rep, src) :> ITransactionScope
-        let commit (t : ITransactionScope) = (t :?> TransactionScope).commit ()
-        let rollback (t : ITransactionScope) = (t :?> TransactionScope).rollback ()
-        let add (t : ITransactionScope) i v e =
-            (t :?> TransactionScope).addEvent (i,e) v
-        let restore (t : ITransactionScope) p i =
-            (t :?> TransactionScope).restore p i
-        let exists (t : ITransactionScope) i =
-            (t :?> TransactionScope).exists i
+        let beginTrans () = new ObservableTransactionScope (rep, src) :> ITransactionScope
+        let call f (t : ITransactionScope) = f (t :?> ObservableTransactionScope)
 
         { new IEventRepository with 
             member __.beginTransaction () = beginTrans ()
-            member __.commit t            = commit t
-            member __.rollback t          = rollback t
-            member __.exists (t,id)       = exists t id
-            member __.restore (t,id,p)    = restore t p id
-            member __.add (t,i,v,e)       = add t i v e
+            member __.commit t            = t |> call (fun t -> t.commit ())
+            member __.rollback t          = t |> call (fun t -> t.rollback ())
+            member __.exists (t,id)       = t |> call (fun t -> t.exists id)
+            member __.restore (t,id,p)    = t |> call (fun t -> t.restore p id)
+            member __.add (t,i,v,e)       = t |> call (fun t -> t.addEvent (i,e) v)
         }
 
     let create () : IEventObservable =

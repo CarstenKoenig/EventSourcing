@@ -108,23 +108,14 @@ module EntityFramework =
     /// the used DB should contain a EventRows-table consisting holding EventRow data
     let create (connection, useTransactions : bool) : IEventRepository =
         
-        let useTransaction (f : StoreContext -> 'a) (t : EfTransactionScope) =
-            t.execute f
-
-        let exists id =
-            useTransaction (fun c -> c.Exists id)
-
-        let addEvent (id : EntityId) (ver : Version option) (e : 'e) =
-            useTransaction (fun c -> c.Add (id, ver, e))
-
-        let restore (p : Projection.T<'e,_,'a>) (id : EntityId) =
-            useTransaction (fun c -> c.LoadProjection (p, id))
+        let call f (t : ITransactionScope) = f (t :?> EfTransactionScope)
+        let execute f t = call (fun t -> t.execute f) t
 
         { new IEventRepository with
-            member __.add (t,id,ver,event) = addEvent id ver event (t :?> EfTransactionScope)
-            member __.exists (t,id)        = exists id (t :?> EfTransactionScope)
-            member __.restore (t,id,p)     = restore p id (t :?> EfTransactionScope)
+            member __.add (t,id,ver,event) = t |> execute (fun s -> s.Add (id,ver,event))
+            member __.exists (t,id)        = t |> execute (fun s -> s.Exists id)
+            member __.restore (t,id,p)     = t |> execute (fun s -> s.LoadProjection (p,id))
             member __.beginTransaction ()  = new EfTransactionScope (connection, useTransactions) :> ITransactionScope
-            member __.rollback t           = (t :?> EfTransactionScope).Rollback()
-            member __.commit   t           = (t :?> EfTransactionScope).Commit()
+            member __.rollback t           = t |> call (fun t -> t.Rollback())
+            member __.commit   t           = t |> call (fun t -> t.Commit())
         }
