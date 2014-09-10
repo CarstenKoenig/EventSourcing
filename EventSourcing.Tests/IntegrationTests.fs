@@ -10,16 +10,17 @@ open Moq
 module ``integration: using a simple domain with an inmemory-store`` =
     open EventSourcing
 
+    Repositories.InMemory.disableRollbackError()
+
     [<AutoOpen>]
     module SystemUnderTest =
 
         type NumberValue =
-            private
             | Created    of int
             | Added      of int
             | Subtracted of int
 
-        let private currentValueP : Projection.T<NumberValue,_,int> =
+        let currentValueP : Projection.T<NumberValue,_,int> =
             Projection.create 0 (fun nv -> 
                 function
                 | Created n    -> n
@@ -48,6 +49,9 @@ module ``integration: using a simple domain with an inmemory-store`` =
         let subtractNumber (id : EntityId) (n : int) (sut : T) =
             sut.eventStore
             |> EventStore.add id (Subtracted n)
+
+        let run (comp : StoreComputation.T<'a>) (sut : T) : 'a =
+            EventStore.execute sut.eventStore comp
 
         let createNewNumber (init : int) (sut : T) : EntityId =
             store {
@@ -104,5 +108,19 @@ module ``integration: using a simple domain with an inmemory-store`` =
         (fun () -> sut |> executeTransaction (sourceId, destId) 11) |> should throw typeof<exn>
         sut |> currentValue sourceId |> should equal 10
         sut |> currentValue destId |> should equal 5
+
+    [<Fact>]
+    let ``a store-computation should throw an error if another event got inserted while running``() =
+        let sut = create ()
+        let id = sut |> createNewNumber 0
+        let insertAnotherOne() = sut |> addNumber id 5
+        let workflow =  
+            store {
+                do! StoreComputation.add id (Added 1)
+                insertAnotherOne()
+                do! StoreComputation.add id (Added 2)
+                return! StoreComputation.restore currentValueP id
+            }
+        (fun () -> sut |> run workflow |> ignore) |> should throw typeof<EntityConcurrencyException>
 
 

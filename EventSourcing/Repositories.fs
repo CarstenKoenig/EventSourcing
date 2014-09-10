@@ -4,6 +4,11 @@ open EventSourcing
 
 module InMemory =
 
+    let mutable private RollbackErrorEnabled = true
+
+    let disableRollbackError() =
+        RollbackErrorEnabled <- false
+
     open System.Collections.Generic
 
     /// creates an in-memory event-repository
@@ -22,7 +27,7 @@ module InMemory =
             |> fun (l, v) -> 
                 if Option.isSome ver && v <> ver.Value 
                 then 
-                    failwith "concurrency check failed"
+                    raise (EntityConcurrencyException (id, "concurrency exception"))
                 else
                     l.Add (box e)
                     let v' = v+1
@@ -44,5 +49,5 @@ module InMemory =
             member __.exists id            = exists id
             member __.restore (_, id, p)   = restore p id
             member __.beginTransaction ()  = emptyScope
-            member __.rollback _           = failwith "this repository does not support rollbacks - sorry"
+            member __.rollback _           = if RollbackErrorEnabled then failwith "this repository does not support rollbacks - sorry"
             member __.commit   _           = () }

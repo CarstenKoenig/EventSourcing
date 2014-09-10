@@ -16,6 +16,7 @@ type IEventRepository =
     abstract add              : ITransactionScope * EntityId * Version option * 'a -> Version
 
 exception HandlerException of exn
+exception EntityConcurrencyException of EntityId * string
 
 [<AutoOpen>]
 module internal Common =

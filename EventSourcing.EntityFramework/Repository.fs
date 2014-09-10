@@ -64,7 +64,9 @@ module EntityFramework =
                               .Select(fun e -> e.version);
             let lastVersion = if Seq.isEmpty versions then 0 else Seq.head versions
             if Option.isSome addAfter && lastVersion <> addAfter.Value then
-                failwith (sprintf "concurrency-error: expected to add event after version %d but found last version to be %d" addAfter.Value lastVersion)
+                raise (EntityConcurrencyException (
+                        id, 
+                        sprintf "concurrency-error: expected to add event after version %d but found last version to be %d" addAfter.Value lastVersion))
             let version = lastVersion + 1
             let ereignis = 
                 this.EventRows.Add(

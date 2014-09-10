@@ -36,6 +36,9 @@ module ``when adding events to an event-store`` =
             ; addTestevent = addTestevent
             ; eventStore = eventStore }
 
+        let runComputation (comp : StoreComputation.T<'a>) (sut : T) : 'a =
+            sut.eventStore.run comp
+
         let run (sut : T) =
             sut.eventStore.run sut.addTestevent
 
