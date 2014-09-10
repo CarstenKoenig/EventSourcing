@@ -134,7 +134,6 @@ module Example =
         let eventStore = 
             Repositories.EntityFramework.create (dbName, true)
             |> EventStore.fromRepository
-        // let eventStore = Repositories.InMemory.create() |> EventStore.fromRepository
 
         // subscribe an event-handler for logging...
         use unsubscribe = 
