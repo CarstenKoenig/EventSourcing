@@ -46,7 +46,7 @@ module InMemory =
 
         { new IEventRepository with
             member __.add (_,id,ver,event) = add (id,ver) event
-            member __.exists id            = exists id
+            member __.exists (_,id)        = exists id
             member __.restore (_, id, p)   = restore p id
             member __.beginTransaction ()  = emptyScope
             member __.rollback _           = if RollbackErrorEnabled then failwith "this repository does not support rollbacks - sorry"

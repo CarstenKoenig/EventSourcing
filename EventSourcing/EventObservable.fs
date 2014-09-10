@@ -18,10 +18,16 @@ module internal EventObservable =
         let invoke f = try f () with _ as ex -> raise (HandlerException ex)
         let transScope = rep.beginTransaction ()
 
-        member this.addEvent (id : EntityId, event : 'e) (v : EventSourcing.Version option) =
-            let ver = rep.add (this, id, v, event)
+        member __.addEvent (id : EntityId, event : 'e) (v : EventSourcing.Version option) =
+            let ver = rep.add (transScope, id, v, event)
             newEvents.Add (fun () -> obs.publish (id, event))
             ver
+
+        member __.restore (p : Projection.T<_,_,_>) (id : EntityId) =
+            rep.restore (transScope,id,p)
+
+        member __.exists (id : EntityId) =
+            rep.exists (transScope,id)
 
         member __.commit () =
             rep.commit transScope
@@ -44,13 +50,17 @@ module internal EventObservable =
         let rollback (t : ITransactionScope) = (t :?> TransactionScope).rollback ()
         let add (t : ITransactionScope) i v e =
             (t :?> TransactionScope).addEvent (i,e) v
+        let restore (t : ITransactionScope) p i =
+            (t :?> TransactionScope).restore p i
+        let exists (t : ITransactionScope) i =
+            (t :?> TransactionScope).exists i
 
         { new IEventRepository with 
             member __.beginTransaction () = beginTrans ()
             member __.commit t            = commit t
             member __.rollback t          = rollback t
-            member __.exists id           = rep.exists id
-            member __.restore (t,id,p)    = rep.restore (t,id,p)
+            member __.exists (t,id)       = exists t id
+            member __.restore (t,id,p)    = restore t p id
             member __.add (t,i,v,e)       = add t i v e
         }
 

@@ -10,7 +10,7 @@ type IEventRepository =
     abstract beginTransaction : unit -> ITransactionScope
     abstract commit           : ITransactionScope -> unit
     abstract rollback         : ITransactionScope -> unit
-    abstract exists           : EntityId -> bool
+    abstract exists           : ITransactionScope * EntityId -> bool
     abstract restore          : ITransactionScope * EntityId * Projection.T<'e,_,'a> -> ('a * Version)
     /// if an optional version is given teh repository will check that it's the same as the latest entity-event version in the repository
     abstract add              : ITransactionScope * EntityId * Version option * 'a -> Version

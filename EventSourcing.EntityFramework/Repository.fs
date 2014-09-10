@@ -68,13 +68,13 @@ module EntityFramework =
                         id, 
                         sprintf "concurrency-error: expected to add event after version %d but found last version to be %d" addAfter.Value lastVersion))
             let version = lastVersion + 1
-            let ereignis = 
-                this.EventRows.Add(
-                    { number        = -1
-                    ; insertTime    = DateTime.Now
-                    ; entityId      = id
-                    ; version       = version
-                    ; jsonData      = serialize event })
+            this.EventRows.Add(
+                { number        = -1
+                ; insertTime    = DateTime.Now
+                ; entityId      = id
+                ; version       = version
+                ; jsonData      = serialize event }
+            ) |> ignore
             if this.SaveChanges() <> 1 then failwith "a EventRow was not saved"
             version
 
@@ -88,15 +88,15 @@ module EntityFramework =
             |> Seq.map deserialize
             |> Projection.fold pAndVer
 
-    type TransactionScope internal (connection, useTransactions) =
+    type EfTransactionScope internal (connection, useTransactions) =
         let context = new StoreContext (connection)
         let trans = if useTransactions then Some <| context.Database.BeginTransaction() else None
 
-        member this.execute (f : StoreContext -> 'a) = 
+        member __.execute (f : StoreContext -> 'a) = 
             f context
-        member this.Commit() = 
+        member __.Commit() = 
             trans |> Option.iter (fun t -> t.Commit())
-        member this.Rollback() = 
+        member __.Rollback() = 
             trans |> Option.iter (fun t -> t.Rollback())
 
         interface ITransactionScope with
@@ -108,15 +108,11 @@ module EntityFramework =
     /// the used DB should contain a EventRows-table consisting holding EventRow data
     let create (connection, useTransactions : bool) : IEventRepository =
         
-        let useContext (f : StoreContext -> 'a) =
-            use context = new StoreContext(connection)
-            f context
-
-        let useTransaction (f : StoreContext -> 'a) (t : TransactionScope) =
+        let useTransaction (f : StoreContext -> 'a) (t : EfTransactionScope) =
             t.execute f
 
         let exists id =
-            useContext (fun c -> c.Exists id)
+            useTransaction (fun c -> c.Exists id)
 
         let addEvent (id : EntityId) (ver : Version option) (e : 'e) =
             useTransaction (fun c -> c.Add (id, ver, e))
@@ -125,10 +121,10 @@ module EntityFramework =
             useTransaction (fun c -> c.LoadProjection (p, id))
 
         { new IEventRepository with
-            member __.add (t,id,ver,event) = addEvent id ver event (t :?> TransactionScope)
-            member __.exists id            = exists id
-            member __.restore (t,id,p)     = restore p id (t :?> TransactionScope)
-            member __.beginTransaction ()  = new TransactionScope (connection, useTransactions) :> ITransactionScope
-            member __.rollback t           = (t :?> TransactionScope).Rollback()
-            member __.commit   t           = (t :?> TransactionScope).Commit()
+            member __.add (t,id,ver,event) = addEvent id ver event (t :?> EfTransactionScope)
+            member __.exists (t,id)        = exists id (t :?> EfTransactionScope)
+            member __.restore (t,id,p)     = restore p id (t :?> EfTransactionScope)
+            member __.beginTransaction ()  = new EfTransactionScope (connection, useTransactions) :> ITransactionScope
+            member __.rollback t           = (t :?> EfTransactionScope).Rollback()
+            member __.commit   t           = (t :?> EfTransactionScope).Commit()
         }

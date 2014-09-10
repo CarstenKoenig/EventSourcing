@@ -131,8 +131,10 @@ module Example =
     /// run a basic example
     let run dbName =
 
-        // let store = EntityFramework.EventStore.create dbName
-        let eventStore = Repositories.InMemory.create() |> EventStore.fromRepository
+        let eventStore = 
+            Repositories.EntityFramework.create (dbName, true)
+            |> EventStore.fromRepository
+        // let eventStore = Repositories.InMemory.create() |> EventStore.fromRepository
 
         // subscribe an event-handler for logging...
         use unsubscribe = 
@@ -173,7 +175,7 @@ module Main =
         let connection = "TestDb"
 
         // reset the Database
-        // using (new EntityFramework.EventStore.StoreContext(connection)) (fun c -> c.ClearTables())
+        using (new Repositories.EntityFramework.StoreContext(connection)) (fun c -> c.ClearTables())
 
         Example.run connection
         printfn "Return to close"

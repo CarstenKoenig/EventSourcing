@@ -6,7 +6,6 @@ open EventObservable
 /// methods to run computations
 /// and check if a entity exists
 type IEventStore =
-    abstract exists    : EntityId -> bool
     abstract run       : StoreComputation.T<'a> -> 'a
     abstract subscribe : 'e EventHandler -> System.IDisposable
 
@@ -26,16 +25,11 @@ module EventStore =
         StoreComputation.restore p id
         |> es.run
 
-    /// checks if events exists for the given entity-id inside the store
-    let exists (id : EntityId) (es : IEventStore) =
-        es.exists(id)
-
     /// creates an event-store from a repository
     let fromRepository (rep : IEventRepository) : IEventStore =
         let eventObs = EventObservable.create ()
         let rep' = EventObservable.wrap rep eventObs
         { new IEventStore with
-            member __.exists id   = rep.exists id
             member __.run p       = p |> StoreComputation.executeIn rep'
             member __.subscribe h = eventObs.addHandler h
         }

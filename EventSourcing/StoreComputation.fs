@@ -53,8 +53,8 @@ module StoreComputation =
 
     /// does the entity exists inside the used repository?
     let exists (id : EntityId) : T<bool> =
-        create (fun r _ u ->
-            (r.exists id, u))
+        create (fun r t u ->
+            (r.exists (t,id), u))
 
     /// restore a value from the repository using a projection
     /// tracks the latest version of this entity
