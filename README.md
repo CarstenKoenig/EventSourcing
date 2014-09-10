@@ -8,12 +8,12 @@ EventSourcing library with support for applicative projection definitions
 
 **CAUTION: quasi-theoretic semi-nonsense ahead - feel free to skip**
 
-**EventSourcing** is sometimes called *functional-databse*. If you look at how current data/state is recustructed from a sequence of events it nothing less than a **functional left-fold**.
+**EventSourcing** is sometimes called *functional-database*. If you look at how current data/state is recustructed from a sequence of events it nothing less than a **functional left-fold**.
 
 The main idea behind this project is to make these **projections** from the event-sequence to data first-class objects.
 For this I wraped the function you fold over (`state -> event -> state`) together with a final projection (`state -> output`) in a *projection-type* [Projection.T](/EventSourcing/Projections.fs).
 
-Thanks to the final projection this is obviously a functor. And even it's not really a applicative-functor, as the types from the internal-fold-state mess up most of the laws, it's an applicative functor by behaviour and I added the common operations.
+Thanks to the final projection this is obviously a functor. And even it's not really an applicative-functor, as the types from the internal-fold-state mess up most of the laws, it's an applicative functor by behaviour and I added the common operations.
 
 ## usage
 
@@ -58,20 +58,20 @@ Remember: `pure f <*> x == f $ x` (**remark** in this library `pure` is named `c
 Now let's give the projections a simplified type: `P<'a>` (think: "projection that yields an `'a`").
 
 Then we can see that  `pure containerInfo` has type `P<Id -> Location -> Weigth -> Bool -> (Goods * Weight) list -> ContainerInfo>`.
-And because `<*>` has type `P<'a -> 'b> -> P<'a> -> P<'a>` we see that `createInfo <?> id` plugs in the id into the constructor (in the final projection - that's how `fmap` is defined) and has type `P<Location -> Weigth -> Bool -> (Goods * Weight) list -> ContainerInfo>`.
+And because `<*>` has type `P<'a -> 'b> -> P<'a> -> P<'b>` we see that `createInfo <?> id` plugs in the id into the constructor (in the final projection - that's how `fmap` is defined) and has type `P<Location -> Weigth -> Bool -> (Goods * Weight) list -> ContainerInfo>`.
 
 Now of course each `<*>` will just plug in another argument.
 
 ### repositories
 
-These are where events are stored to - a repository has methods to check if a entity exisist (`EntityId -> Bool`), 
-add a event to a entity, some stuff to support transactions and a *restore* function to use a projection to get some value out of the store.
+These are where events are stored to - a repository has methods to check if an entity exists (`EntityId -> Bool`), 
+add an event to an entity, some stuff to support transactions and a *restore* function to use a projection to get some value out of the store.
 
-You can optionally give the latest expceted version-value of a entity to the `add` function to support concurrency checks too.
+You can optionally give the latest excepted version-value of a entity to the `add` function to support concurrency checks too.
 
-But normaly you should not access repositories directly - you should use an `EventStore` to interact with the system.
+But normally you should not access repositories directly - you should use an `EventStore` to interact with the system.
 
-Included are a in-memory repository `EventSourcing.Repositories.InMemory` and a Model-First Entity-Framework based repository in `EventSourcing.Repositories.EntityFramework`.
+Included are an in-memory repository `EventSourcing.Repositories.InMemory` and a Model-First Entity-Framework based repository in `EventSourcing.Repositories.EntityFramework`.
 
 ### event stores
 An event-store is basically a repository that publishes new events using the observable pattern.
@@ -87,42 +87,42 @@ Subscribes an event-handler `h` to the event-store `es`. If you dispose the resu
 #### execute a store-computation
 
     EventStore.execute (es : IEventStore) (comp : StoreComputation.T<'a>)
-Executes an store-computation `comp` within the store `es` returing it's result.
+Executes an store-computation `comp` within the store `es` returning its result.
 If there is an exception thrown while running the computation `rollback` at the underlying repository will be called
 and the exception will be passed to the caller.
 
 #### adding an event
 
     EventStore.add (id : EntityId) (e : 'e) (es : IEventStore)
-Adds an event `e` to the entity with id `id` using the event-store `es`
+Adds an event `e` to the entity with id `id` using the event-store `es`.
 
 #### restoring from a projection
 
     EventStore.restore (p : Projection.T<_,_,'a>) (id : EntityId) (es : IEventStore) : 'a
-Queries data from the event-source for the entity with id `id` from the event-store `es` using a projection `p`
+Queries data for the entity with id `id` from the event-store `es` using a projection `p`.
 
 #### check if an entity exists
 
     EventStore.exists (id : EntityId) (es : IEventStore)
-Checks if an event with id `id` exists in the event-store `es`
+Checks if an event with id `id` exists in the event-store `es`.
 
 #### create an store from a repository
 
     EventStore.fromRepository (rep : IEventRepository) : IEventStore
-Creates an event-store from a repositorty `rep` - all queries and commands will use this repostiory and it's
+Creates an event-store from a repositorty `rep` - all queries and commands will use this repository and it's
 `commit` and `rollback` will be called accordingly.
 
 ### store computations
 
 This is an abstraction around inserting and querying data from an `EventStore` - it includes functions and a Monad-Builder to define queries against a store.
-This mechanism will keep Entity-Versions in check and try to ensure concurency issues.
+This mechanism will keep Entity-Versions in check and try to ensure concurrency issues.
 
 The primitive building blocks are:
 
 #### check if an entity exists
 
     StoreComputation.exists (id : EntityId) : T<bool>
-Checks if there is an entity with this id in the store.
+Checks if there is an entity with id `id` in the store.
 
 #### restoring data using a projection
 
@@ -132,29 +132,29 @@ Uses a projection `p` to query data from the event-source of an entity with id `
 #### adding an event 
 
     StoreComputation.add (id : EntityId) (event : 'e) : T<unit>
-Adds an event`event` to the entity with id `id`
+Adds an event `event` to the entity with id `id`
 
 #### ignoring the next concurrency check for an entity
 
-    StoreComputation.ignoreNextConccurrencyCheckFor (id : EntityId) : T<unit>
+    StoreComputation.ignoreNextConcurrencyCheckFor (id : EntityId) : T<unit>
 Normaly each `add` will give the currently known version of the entity to the repository 
 (which should check if this is the same as the last events-version).
 If another event got inserted concurrently this will yield an exception and the transaction will be rolled-back.
 
-You can dissable this behaviour by using this function - it will remove the known entity-version so that the next `add` will ignore
+You can disable this behaviour by using this function - it will remove the known entity-version so that the next `add` will ignore
 any concurrency issues.
 
-#### executing an computation using a repository
+#### executing a computation using a repository
 
-    StoreComutation.executeIn (rep : IEventRepository) (comp : T<'a>) : 'a
-Executes an computation `comp` using the `rep` repository returing the computations result.
-This will take care of the event-version and call the repositories `comit` on success or `rollback` if an exception occured.
+    StoreComputation.executeIn (rep : IEventRepository) (comp : T<'a>) : 'a
+Executes an computation `comp` using the `rep` repository returning the computation result.
+This will take care of the event-version and call the repositories `commit` on success or `rollback` if an exception occured.
 
 You should not call this method yourself - instead you should use `EventStore.execute`
 
 #### monadic builder support
 
-You can use the `store` computational-expression to build up more complexe computations.
+You can use the `store` computational-expression to build up more complex computations.
 
 #### Example
 
