@@ -169,8 +169,12 @@ module Main =
 
     [<EntryPoint>]
     let main argv = 
+#if MONO 
         let (rep, disp) = Repositories.Sqlite.openAndCreate ("URI=file::memory:", true)
         use disp = disp
+#else
+        let rep = Repositories.EntityFramework.create ("TestDb", true)
+#endif
 
         Example.run rep
         printfn "Return to close"
