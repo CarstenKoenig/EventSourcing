@@ -4,15 +4,10 @@ open EventSourcing
 
 module InMemory =
 
-    let mutable private RollbackErrorEnabled = true
-
-    let disableRollbackError() =
-        RollbackErrorEnabled <- false
-
     open System.Collections.Generic
 
     /// creates an in-memory event-repository
-    let create () : IEventRepository =
+    let create (errorOnRollbackEnabled : bool) : IEventRepository =
         let cache = new Dictionary<EntityId, (List<obj>*Version)>()
 
         let exists id = lock cache (fun () -> cache.ContainsKey id)
@@ -49,5 +44,5 @@ module InMemory =
             member __.exists (_,id)        = exists id
             member __.restore (_, id, p)   = restore p id
             member __.beginTransaction ()  = emptyScope
-            member __.rollback _           = if RollbackErrorEnabled then failwith "this repository does not support rollbacks - sorry"
+            member __.rollback _           = if errorOnRollbackEnabled then failwith "this repository does not support rollbacks - sorry"
             member __.commit   _           = () }
