@@ -53,4 +53,10 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EventSourcing\EventSourcing.fsproj">
+      <Project>{349B9677-C7D2-4734-BA87-3C4890697806}</Project>
+      <Name>EventSourcing</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

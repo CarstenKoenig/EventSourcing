@@ -129,11 +129,9 @@ module Example =
     // example
 
     /// run a basic example
-    let run dbName =
+    let run (rep : IEventRepository) =
 
-        let eventStore = 
-            Repositories.EntityFramework.create (dbName, true)
-            |> EventStore.fromRepository
+        let eventStore = EventStore.fromRepository rep 
 
         // subscribe an event-handler for logging...
         use unsubscribe = 
@@ -171,14 +169,10 @@ module Main =
 
     [<EntryPoint>]
     let main argv = 
-        let connection = "TestDb"
+        let (rep, disp) = Repositories.Sqlite.openAndCreate ("URI=file::memory:", true)
+        use disp = disp
 
-        EventSourcing.Repositories.Sqlite.testRun()
-
-        // reset the Database
-        using (new Repositories.EntityFramework.StoreContext(connection)) (fun c -> c.ClearTables())
-
-        Example.run connection
+        Example.run rep
         printfn "Return to close"
         Console.ReadLine() |> ignore
         0 // return an integer exit code

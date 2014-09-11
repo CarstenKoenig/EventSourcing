@@ -1,8 +1,9 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="EventSourcing/Projections.fs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="EventSourcing.Sqlite/Repository.fs">
     <Files>
-      <File FileName="EventSourcing/Projections.fs" Line="1" Column="1" />
+      <File FileName="EventSourcing.Sqlite/Repository.fs" Line="33" Column="33" />
+      <File FileName="ConsoleSample/Program.fs" Line="9" Column="9" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
