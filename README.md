@@ -21,6 +21,64 @@ Thanks to the final projection this is obviously a functor. And even it's not re
 
 Instead of defining your aggregates or projections in classes and class-methods where you basically do the *left-fold* time and time again on your own you can use the primitive combinators from [Projection.T](/EventSourcing/Projections.fs) to define projections for data-parts you need. Those lego-bricks can be combined and reused - using the operators `<?>` and `<*>` - to get more complex projections.
 
+#### API
+
+##### create a constant *Projection*
+
+    Projection.constant (a : 'a)
+    
+creates a *Projection* that will just return a constant value.
+
+##### `$`: map the result of a *Projection*
+
+    Projection.map (f : 'a -> 'b) (p : T<'e,'i,'a>) : T<'e,'i,'b>
+    
+or just `$`:
+
+Uses `f` to map the final outcome of the projection `p` into another result.
+
+##### `<*>` sequential application
+ 
+    Projection.sequence (f : T<'e,'i1,('a -> 'b)>) (p : T<'e,'i2,'a>) : T<'e, 'i1*'i2,'b>
+    
+or just `<*>`:
+
+Use this together with `$` to build complexe *Projections* from simple ones (see below).
+
+This is the applicative-sequence operator - it will fold the inner states of it's two opperants using tuples, so there is no need to enumerate the event-sequence more than once.
+
+##### create a *projection* with full control
+
+    Projection.createWithProjection (p : 'i -> 'a) (i : 'i) (f : 'i -> 'e -> 'i)
+    
+using this function you have full control on the inner-fold `f`, the initial value `i` and the final projection `p` used in the *Projection*
+
+##### create a *Projection*
+
+    Projection.create (init : 'a) (f : 'a -> 'e -> 'a)
+
+using the same as `createWithProjection` but using `id` for the final projection.
+
+##### aggregates some events into a sum
+
+    Projection.sumBy (f : 'e -> ^a option)
+    
+Applies `f` to all events and sums up all of those values returning `Some number`, ignoring those returning `None`
+
+##### find the latest value
+
+    Projection.latest (f : 'e -> 'a option)
+    
+Returns the latest `value` of an event `e` where `f e` returns `Some value`. Here latest is refering to the event with the highest *Version*-number.
+
+##### finds a single value
+
+    Projection.single (f : 'e -> 'a option)
+    
+Returns `value` of the only event `e` where `f e` returns `Some value`. Throws an exception if there is more than one such event or when no such event was found.
+
+#### Example
+
 Here is an example from the [ConsoleSample](/ConsoleSample/Program.fs)-project:
 
 ```
@@ -36,7 +94,7 @@ let nettoWeight =
 Here we are using `Projection.sumBy` to keep track of the content-weight of our container (we add weight if something was loaded and subtract it if something got unloaded).
 Finally we are using `$` to apply this projection to the function `((+) 2.33<t>)`, which of course just adds 2.33t for the container-weight itself. 
 
-**remark:** You might know `$` as `<$>` of `fmap` from Haskell or Scalaz but the `<$>` is reserved in F# for further use ... so let's keep hoping ;)
+**remark:** You might know `$` as `<$>` or `fmap` from Haskell or Scalaz but the `<$>` is reserved in F# for further use ... so let's keep hoping ;)
 
 If you look further in the sample you will see this:
 
@@ -49,16 +107,19 @@ If you look further in the sample you will see this:
         createInfo $ id <*> location <*> nettoWeight <*> isOverloaded <*> goods
 ```
 
-This is a good example we can use  `$` and `<*>` in a clever way to build up projections for a complex structure.
+This is a good example of how you can use  `$` and `<*>` in a clever way to build up projections for a complex structure.
 
-Here we use a curried constructor for `ContainerInfo` (a function with 5 arguments) and pass those in one-by-one using the applicative operators `<?>` and `<*>` - btw: I learnded this trick from WebSharper!
+All you need is a curried constructor for `ContainerInfo` (a function with 5 arguments) and pass those in one-by-one using the applicative operators `$` and `<*>` - btw: I learnded to appreciate this trick from WebSharper!
+
+#### How does this work?
+Let's follow the types.
 
 Remember: `pure f <*> x == f $ x` (**remark** in this library `pure` is named `constant`).
 
 Now let's give the projections a simplified type: `P<'a>` (think: "projection that yields an `'a`").
 
 Then we can see that  `pure containerInfo` has type `P<Id -> Location -> Weigth -> Bool -> (Goods * Weight) list -> ContainerInfo>`.
-And because `<*>` has type `P<'a -> 'b> -> P<'a> -> P<'b>` we see that `createInfo <?> id` plugs in the id into the constructor (in the final projection - that's how `fmap` is defined) and has type `P<Location -> Weigth -> Bool -> (Goods * Weight) list -> ContainerInfo>`.
+And because `<*>` has type `P<'a -> 'b> -> P<'a> -> P<'b>` we see that `createInfo $ id` plugs in the id into the constructor (in the final projection - that's how `fmap` is defined) and has type `P<Location -> Weigth -> Bool -> (Goods * Weight) list -> ContainerInfo>`.
 
 Now of course each `<*>` will just plug in another argument.
 
@@ -77,36 +138,37 @@ Included are an in-memory repository `EventSourcing.Repositories.InMemory` and a
 An event-store is basically a repository that publishes new events using the observable pattern.
 But instead of just wrapping the primitive operations it will use store-computations (see next section) to execute queries and commands.
 
+#### API
 The main functions are:
 
-#### subscribe an event-handler
+##### subscribe an event-handler
 
     EventStore.subscribe (h : 'e EventHandler) (es : IEventStore) : System.IDisposable
 Subscribes an event-handler `h` to the event-store `es`. If you dispose the result the handler will be unsubscribed.
 
-#### execute a store-computation
+##### execute a store-computation
 
     EventStore.execute (es : IEventStore) (comp : StoreComputation.T<'a>)
 Executes an store-computation `comp` within the store `es` returning its result.
 If there is an exception thrown while running the computation `rollback` at the underlying repository will be called
 and the exception will be passed to the caller.
 
-#### adding an event
+##### adding an event
 
     EventStore.add (id : EntityId) (e : 'e) (es : IEventStore)
 Adds an event `e` to the entity with id `id` using the event-store `es`.
 
-#### restoring from a projection
+##### restoring from a projection
 
     EventStore.restore (p : Projection.T<_,_,'a>) (id : EntityId) (es : IEventStore) : 'a
 Queries data for the entity with id `id` from the event-store `es` using a projection `p`.
 
-#### check if an entity exists
+##### check if an entity exists
 
     EventStore.exists (id : EntityId) (es : IEventStore)
 Checks if an event with id `id` exists in the event-store `es`.
 
-#### create an store from a repository
+##### create an store from a repository
 
     EventStore.fromRepository (rep : IEventRepository) : IEventStore
 Creates an event-store from a repositorty `rep` - all queries and commands will use this repository and it's
@@ -117,24 +179,25 @@ Creates an event-store from a repositorty `rep` - all queries and commands will 
 This is an abstraction around inserting and querying data from an `EventStore` - it includes functions and a Monad-Builder to define queries against a store.
 This mechanism will keep Entity-Versions in check and try to ensure concurrency issues.
 
+#### API
 The primitive building blocks are:
 
-#### check if an entity exists
+##### check if an entity exists
 
     StoreComputation.exists (id : EntityId) : T<bool>
 Checks if there is an entity with id `id` in the store.
 
-#### restoring data using a projection
+##### restoring data using a projection
 
     StoreComputation.restore (p : Projection.T<'e,_,'a>) (id : EntityId) : T<'a>
 Uses a projection `p` to query data from the event-source of an entity with id `id`.
 
-#### adding an event 
+##### adding an event 
 
     StoreComputation.add (id : EntityId) (event : 'e) : T<unit>
 Adds an event `event` to the entity with id `id`
 
-#### ignoring the next concurrency check for an entity
+##### ignoring the next concurrency check for an entity
 
     StoreComputation.ignoreNextConcurrencyCheckFor (id : EntityId) : T<unit>
 Normaly each `add` will give the currently known version of the entity to the repository 
@@ -144,7 +207,7 @@ If another event got inserted concurrently this will yield an exception and the 
 You can disable this behaviour by using this function - it will remove the known entity-version so that the next `add` will ignore
 any concurrency issues.
 
-#### executing a computation using a repository
+##### executing a computation using a repository
 
     StoreComputation.executeIn (rep : IEventRepository) (comp : T<'a>) : 'a
 Executes an computation `comp` using the `rep` repository returning the computation result.
@@ -152,7 +215,7 @@ This will take care of the event-version and call the repositories `commit` on s
 
 You should not call this method yourself - instead you should use `EventStore.execute`
 
-#### monadic builder support
+##### monadic builder support
 
 You can use the `store` computational-expression to build up more complex computations.
 

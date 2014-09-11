@@ -10,8 +10,6 @@ open Moq
 module ``integration: using a simple domain with an inmemory-store`` =
     open EventSourcing
 
-    Repositories.InMemory.disableRollbackError()
-
     [<AutoOpen>]
     module SystemUnderTest =
 
@@ -34,7 +32,7 @@ module ``integration: using a simple domain with an inmemory-store`` =
 
         let create () : T =
             let eventStore = 
-                Repositories.InMemory.create ()
+                Repositories.InMemory.create false
                 |> EventStore.fromRepository
             { eventStore = eventStore }
 
@@ -121,7 +119,8 @@ module ``integration: using a simple domain with an inmemory-store`` =
                 do! StoreComputation.add id (Added 2)
                 return! StoreComputation.restore currentValueP id
             }
-        (fun () -> sut |> run workflow |> ignore) |> should throw typeof<EntityConcurrencyException>
+        Assert.Throws<EntityConcurrencyException>(fun () -> 
+            sut |> run workflow |> ignore)
 
     [<Fact>]
     let ``a store-computation should throw an error if another event got inserted while running - even if there was an read after``() =
@@ -136,7 +135,8 @@ module ``integration: using a simple domain with an inmemory-store`` =
                 do! StoreComputation.add id (Added 2)
                 return! StoreComputation.restore currentValueP id
             }
-        (fun () -> sut |> run workflow |> ignore) |> should throw typeof<EntityConcurrencyException>
+        Assert.Throws<EntityConcurrencyException>(fun () -> 
+            sut |> run workflow |> ignore)
 
     [<Fact>]
     let ``a store-computation should not throw an error if it was suppressed even if another event got inserted while running``() =
@@ -151,5 +151,5 @@ module ``integration: using a simple domain with an inmemory-store`` =
                 do! StoreComputation.add id (Added 2)
                 return! StoreComputation.restore currentValueP id
             }
-        sut |> run workflow |> should equal 8
-
+        Assert.DoesNotThrow(fun () -> 
+            sut |> run workflow |> ignore)
