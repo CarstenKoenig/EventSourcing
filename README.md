@@ -235,6 +235,8 @@ You can use the `store` computational-expression to build up more complex comput
 
 ## Remarks
 
-I'm not to happy with the EF repository I included. LocalDB for example is not working on Linux/Mono (or I am not aware of). I would rather get a Sqlite backend in there but I'm still searching for a good (maybe even F# happy) framework using on both Mono and .net.
+There is an EF repository included that should work on .net and Sqlite repository that should work on Mono/Linux (Monodevelop).
 
-If someone knows a good one please let me know - or even better send me a pull-request :D
+I did not find a way to make either work on both plattforms (yet) - maybe someone can give me a clue on how to achive this (Pull-Request very welcome).
+
+Anyway you should consider implementing your own repository in a serious situation.
