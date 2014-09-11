@@ -38,12 +38,6 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EntityFramework">
-      <HintPath>..\packages\EntityFramework.6.1.1\lib\net40\EntityFramework.dll</HintPath>
-    </Reference>
-    <Reference Include="EntityFramework.SqlServer">
-      <HintPath>..\packages\EntityFramework.6.1.1\lib\net40\EntityFramework.SqlServer.dll</HintPath>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -59,13 +53,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\EventSourcing.EntityFramework\EventSourcing.EntityFramework.fsproj">
-      <Name>EventSourcing.EntityFramework</Name>
-      <Project>{9310A640-9C9F-445D-9FD2-3492AF6C5379}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\EventSourcing\EventSourcing.fsproj">
       <Name>EventSourcing</Name>
       <Project>{349B9677-C7D2-4734-BA87-3C4890697806}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\EventSourcing.Sqlite\EventSourcing.Sqlite.fsproj">
+      <Project>{A7B93164-6137-4002-BEA6-2CEB8B4670EA}</Project>
+      <Name>EventSourcing.Sqlite</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
