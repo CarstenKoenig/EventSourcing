@@ -133,6 +133,14 @@ module Example =
 
         let eventStore = EventStore.fromRepository rep 
 
+        let writeWithColor (c : ConsoleColor) (s : string) =
+            Console.ForegroundColor <- c
+            Console.WriteLine s
+            Console.ResetColor()
+
+        let writeEvent = writeWithColor ConsoleColor.Yellow
+        let showCaption = (fun s -> s + "\n------------------") >> writeWithColor ConsoleColor.Green
+
         // subscribe an event-handler for logging...
         use unsubscribe = 
             eventStore.subscribe (
@@ -141,7 +149,7 @@ module Example =
                 | (id, MovedTo l)      -> sprintf "container %A moved to %s"  id l
                 | (id, Loaded (g,w))   -> sprintf "container %A loaded %.2ft of %s" id (w / 1.0<t>) g
                 | (id, Unloaded (g,w)) -> sprintf "container %A UNloaded %.2ft of %s" id (w / 1.0<t>) g
-                >> Console.WriteLine)
+                >> writeEvent)
 
         // insert some sample history
         let container = 
@@ -156,14 +164,26 @@ module Example =
                 return container } 
             |> EventStore.execute eventStore
 
-        Console.WriteLine("\n\nRESULT\n")
+
+        // just show all events
+        showCaption ("\n\nEvents")
+        container
+        |> StoreComputation.restore (Projection.events())
+        |> EventStore.execute eventStore
+        |> List.iteri (fun i (ev : Container) -> printfn "Event %d: %A" (i+1) ev)
+        Console.WriteLine("=============================")
+
+        showCaption ("\n\nResult")
+        let showGoods (goods : (Goods*Weight) list) =
+            let itms = goods |> List.map (fun (g,w) -> sprintf "  %6.2ft %s" (w / 1.0<t>) g)
+            String.Join("\n", itms)
 
         // aggregate the history into a container-info and print it
         container 
         |> StoreComputation.restore containerInfo 
         |> EventStore.execute eventStore
-        |> (fun ci -> printfn "Container %A currently in %s, loaded with: %A for a total of %.2ft is overloaded: %A" 
-                        ci.id ci.location (List.map fst ci.goods) (ci.netto / 1.0<t>) ci.overloaded)
+        |> (fun ci -> printfn "Container %A\ncurrently in %s\nloaded with:\n%s\nfor a total of %.2ft\nis overloaded: %A" 
+                        ci.id ci.location (showGoods ci.goods) (ci.netto / 1.0<t>) ci.overloaded)
 
 module Main =
 

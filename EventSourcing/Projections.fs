@@ -51,6 +51,19 @@ module Projection =
 
     // some simple projections
 
+    /// maps / filters all events - it will map the events with f and
+    //// choose all values `a` where `f event = Some a`
+    let inline choose (f : 'e -> 'a option) : T<'e,_,'a list> =
+        createWithProjection List.rev [] (fun acc ev -> match f ev with Some a -> a::acc | None -> acc)
+
+    /// gets all events
+    let events() : T<'e,_,'e list> =
+        choose Some
+
+    /// filters all events
+    let filter (f : 'e -> bool) : T<'e,_,'e list> =
+        choose (fun ev -> if f ev then Some ev else None)
+
     /// sums values - f chooses the summands from the events
     let inline sumBy (f : 'e -> ^a option) : T<'e,_,^a> =
         let zero : ^a = LanguagePrimitives.GenericZero
