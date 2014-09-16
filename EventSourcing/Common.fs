@@ -7,6 +7,7 @@ type ITransactionScope =
     inherit System.IDisposable
 
 type IEventRepository =
+    inherit System.IDisposable
     abstract beginTransaction : unit -> ITransactionScope
     abstract commit           : ITransactionScope -> unit
     abstract rollback         : ITransactionScope -> unit

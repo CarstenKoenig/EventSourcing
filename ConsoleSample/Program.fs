@@ -190,10 +190,9 @@ module Main =
     [<EntryPoint>]
     let main argv = 
 #if MONO 
-        let (rep, disp) = Repositories.Sqlite.openAndCreate ("URI=file::memory:", true)
-        use disp = disp
+        use rep = Repositories.Sqlite.openAndCreate ("URI=file::memory:", true)
 #else
-        let rep = Repositories.EntityFramework.create ("TestDb", true)
+        use rep = Repositories.EntityFramework.create ("TestDb", true)
 #endif
 
         Example.run rep

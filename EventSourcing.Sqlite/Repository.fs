@@ -133,12 +133,14 @@ module Sqlite =
 
     /// creates an event-repository using the given sqlite-connection
     /// this will check if a EntityEvents table exists and if not create one in the database
+    /// if the repository will get disposed it will dispose the connection with it
     let create (connection : SqliteConnection, useTransactions : bool) : IEventRepository =
         
         let call f (t : ITransactionScope) = f (t :?> SqliteTransaction)
         let execute f t = call (fun t -> t.execute f) t
 
         { new IEventRepository with
+            member __.Dispose()            = connection.Dispose()
             member __.add (t,id,ver,event) = t |> execute (addEvent (id,ver,event))
             member __.exists (t,id)        = t |> execute (exists id)
             member __.restore (t,id,p)     = t |> execute (loadProjection (p,id))
@@ -149,12 +151,7 @@ module Sqlite =
 
     /// creates an event-repository using the given sqlite-connection-string
     /// this will check if a EntityEvents table exists and if not create one in the database
-    let openAndCreate (conStr : string, useTransactions : bool) : (IEventRepository * IDisposable) =
+    let openAndCreate (conStr : string, useTransactions : bool) : IEventRepository =
         let con = new SqliteConnection (conStr)
         con |> createEntityEventsTable
-        let rep = create (con, useTransactions)
-        let disp = { new IDisposable with 
-            member __.Dispose() = 
-                con.Close()
-                con.Dispose() }
-        (rep, disp)
+        create (con, useTransactions)

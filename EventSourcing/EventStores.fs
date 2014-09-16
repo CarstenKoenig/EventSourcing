@@ -6,6 +6,7 @@ open EventObservable
 /// methods to run computations
 /// and check if a entity exists
 type IEventStore =
+    inherit System.IDisposable
     abstract run       : StoreComputation.T<'a> -> 'a
     abstract subscribe : 'e EventHandler -> System.IDisposable
 
@@ -30,6 +31,7 @@ module EventStore =
         let eventObs = EventObservable.create ()
         let rep' = EventObservable.wrap rep eventObs
         { new IEventStore with
+            member __.Dispose()   = rep.Dispose()
             member __.run p       = p |> StoreComputation.executeIn rep'
             member __.subscribe h = eventObs.addHandler h
         }

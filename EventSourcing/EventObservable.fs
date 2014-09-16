@@ -10,6 +10,7 @@ module internal EventObservable =
     type 'e EventHandler = (EntityId * 'e) -> unit
 
     type IEventObservable =
+        inherit IDisposable
         abstract addHandler : 'e EventHandler -> IDisposable
         abstract publish    : EntityId * 'e -> unit
 
@@ -49,6 +50,7 @@ module internal EventObservable =
         let call f (t : ITransactionScope) = f (t :?> ObservableTransactionScope)
 
         { new IEventRepository with 
+            member __.Dispose()           = src.Dispose(); rep.Dispose()
             member __.beginTransaction () = beginTrans ()
             member __.commit t            = t |> call (fun t -> t.commit ())
             member __.rollback t          = t |> call (fun t -> t.rollback ())
@@ -82,5 +84,6 @@ module internal EventObservable =
                 |> Seq.iter (fun h -> h (id, box event)))
 
         { new IEventObservable with
+            member __.Dispose()      = handlers.Clear()
             member __.addHandler h   = add h
             member __.publish (id,e) = notify (id,e) }

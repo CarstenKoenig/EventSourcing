@@ -7,7 +7,7 @@ open FsUnit.Xunit
 open Moq
 
    
-module ``integration: using a simple domain with an inmemory-store`` =
+module ``integration: using a simple domain with an syncronised inmemory-store`` =
     open EventSourcing
 
     [<AutoOpen>]
@@ -29,10 +29,14 @@ module ``integration: using a simple domain with an inmemory-store`` =
             private {
               eventStore   : IEventStore 
             }
+            with
+            interface IDisposable with
+                member i.Dispose() = (i.eventStore :> IDisposable).Dispose()
 
         let create () : T =
             let eventStore = 
                 Repositories.InMemory.create false
+                |> Repositories.Syncronised.from
                 |> EventStore.fromRepository
             { eventStore = eventStore }
 
@@ -69,7 +73,7 @@ module ``integration: using a simple domain with an inmemory-store`` =
 
     [<Fact>]
     let ``events for 5 + 6 - 3 should result in a currentValue of 8`` () = 
-        let sut = create ()
+        use sut = create ()
         let id = createNewNumber 5 sut
         sut |> addNumber id 6
         sut |> subtractNumber id 3
@@ -78,7 +82,7 @@ module ``integration: using a simple domain with an inmemory-store`` =
 
     [<Fact>]
     let ``can add and read from multiple entities`` () = 
-        let sut = create ()
+        use sut = create ()
         let id = createNewNumber 5 sut
         let id' = createNewNumber 5 sut
         sut |> addNumber id 6
@@ -91,7 +95,7 @@ module ``integration: using a simple domain with an inmemory-store`` =
 
     [<Fact>]
     let ``the complex transaction will transfer subtract the value from the source and add it to the destination``() =
-        let sut = create ()
+        use sut = create ()
         let sourceId = createNewNumber 10 sut
         let destId   = createNewNumber 5  sut
         sut |> executeTransaction (sourceId, destId) 8
@@ -100,7 +104,7 @@ module ``integration: using a simple domain with an inmemory-store`` =
 
     [<Fact>]
     let ``if the complex transaction will fail the current values will not change``() =
-        let sut = create ()
+        use sut = create ()
         let sourceId = createNewNumber 10 sut
         let destId   = createNewNumber 5  sut
         (fun () -> sut |> executeTransaction (sourceId, destId) 11) |> should throw typeof<exn>
@@ -109,7 +113,7 @@ module ``integration: using a simple domain with an inmemory-store`` =
 
     [<Fact>]
     let ``a store-computation should throw an error if another event got inserted while running``() =
-        let sut = create ()
+        use sut = create ()
         let id = sut |> createNewNumber 0
         let insertAnotherOne() = sut |> addNumber id 5
         let workflow =  
@@ -124,7 +128,7 @@ module ``integration: using a simple domain with an inmemory-store`` =
 
     [<Fact>]
     let ``a store-computation should throw an error if another event got inserted while running - even if there was an read after``() =
-        let sut = create ()
+        use sut = create ()
         let id = sut |> createNewNumber 0
         let insertAnotherOne() = sut |> addNumber id 5
         let workflow =  
@@ -140,7 +144,7 @@ module ``integration: using a simple domain with an inmemory-store`` =
 
     [<Fact>]
     let ``a store-computation should not throw an error if it was suppressed even if another event got inserted while running``() =
-        let sut = create ()
+        use sut = create ()
         let id = sut |> createNewNumber 0
         let insertAnotherOne() = sut |> addNumber id 5
         let workflow =  

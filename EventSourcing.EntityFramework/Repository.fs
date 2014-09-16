@@ -111,6 +111,7 @@ module EntityFramework =
         let execute f t = call (fun t -> t.execute f) t
 
         { new IEventRepository with
+            member __.Dispose()            = ()
             member __.add (t,id,ver,event) = t |> execute (fun s -> s.Add (id,ver,event))
             member __.exists (t,id)        = t |> execute (fun s -> s.Exists id)
             member __.restore (t,id,p)     = t |> execute (fun s -> s.LoadProjection (p,id))
