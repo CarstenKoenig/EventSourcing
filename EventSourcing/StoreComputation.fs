@@ -47,6 +47,9 @@ module StoreComputation =
 
     let store = StoreComputationBuilder()
 
+    let internal run (rep : IEventRepository) (ts : ITransactionScope) (comp : 'a T) =
+        let (res, _) = comp.run rep ts Map.empty
+        res
 
     // *********************
     // public operations
@@ -78,25 +81,6 @@ module StoreComputation =
         create (fun r t u ->
             let u'   = u |> removeUsed id
             ((), u'))
-
-    /// executes a store-computation using the given repository
-    /// and it's transaction support
-    /// Note: it will reraise any internal error but will not rollback
-    /// if the errors where caused by EventHandlers (so the events will
-    /// still be saved if there where errors in any EventHandler)
-    let executeIn (rep : IEventRepository) (comp : T<'a>) : 'a =
-        use trans = rep.beginTransaction ()
-        try
-            let (res, _) = comp.run rep trans Map.empty
-            rep.commit trans
-            res
-        with
-        | :? HandlerException ->
-            // don't rollback on Handler-Exceptions
-            reraise()
-        | _ ->
-            rep.rollback trans
-            reraise()
             
 [<AutoOpen>]
 module StoreComputationOperations =

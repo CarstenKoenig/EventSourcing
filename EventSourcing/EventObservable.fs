@@ -1,5 +1,7 @@
 ﻿namespace EventSourcing
 
+exception HandlerException of exn
+
 /// internal support module to wrap observable capabilities
 /// around a repository - used to create EventStores from repositories
 module internal EventObservable =
