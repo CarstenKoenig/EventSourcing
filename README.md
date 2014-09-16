@@ -4,17 +4,6 @@ EventSourcing library with support for applicative projection definitions
 
 100% F# and functional style
 
-## background
-
-**CAUTION: quasi-theoretic semi-nonsense ahead - feel free to skip**
-
-**EventSourcing** is sometimes called *functional-database*. If you look at how current data/state is recustructed from a sequence of events it nothing less than a **functional left-fold**.
-
-The main idea behind this project is to make these **projections** from the event-sequence to data first-class objects.
-For this I wraped the function you fold over (`state -> event -> state`) together with a final projection (`state -> output`) in a *projection-type* [Projection.T](/EventSourcing/Projections.fs).
-
-Thanks to the final projection this is obviously a functor. And even it's not really an applicative-functor, as the types from the internal-fold-state mess up most of the laws, it's an applicative functor by behaviour and I added the common operations.
-
 ## usage
 
 ### projections
@@ -232,6 +221,16 @@ You can use the `store` computational-expression to build up more complex comput
             let ev = MovedTo l
             do! StoreComputation.add id ev }
 
+## background
+
+**CAUTION: quasi-theoretic semi-nonsense ahead - feel free to skip**
+
+**EventSourcing** is sometimes called *functional-database*. If you look at how current data/state is recustructed from a sequence of events it nothing less than a **functional left-fold**.
+
+The main idea behind this project is to make these **projections** from the event-sequence to data first-class objects.
+For this I wraped the function you fold over (`state -> event -> state`) together with a final projection (`state -> output`) in a *projection-type* [Projection.T](/EventSourcing/Projections.fs).
+
+Thanks to the final projection this is obviously a functor. And even it's not really an applicative-functor, as the types from the internal-fold-state mess up most of the laws, it's an applicative functor by behaviour and I added the common operations.
 
 ## Remarks
 
