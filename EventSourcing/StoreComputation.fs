@@ -59,6 +59,11 @@ module StoreComputation =
         create (fun r t u ->
             (r.exists (t,id), u))
 
+    let read (rm : ReadModel<'key, 'value>) (key : 'key) : T<'value> =
+        create (fun _ _ u ->
+            let value = rm.Read key
+            (value, u))
+
     /// restore a value from the repository using a projection
     /// tracks the latest version of this entity
     let restore (p : Projection.T<'e,_,'a>) (id : EntityId) : T<'a> =
@@ -78,7 +83,7 @@ module StoreComputation =
     /// dissables the next concurrency check for an entity by removing
     /// the cached version
     let ignoreNextConccurrencyCheckFor (id : EntityId) : T<unit> =
-        create (fun r t u ->
+        create (fun _ _ u ->
             let u'   = u |> removeUsed id
             ((), u'))
             

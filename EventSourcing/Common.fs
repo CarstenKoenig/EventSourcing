@@ -16,6 +16,9 @@ type IEventRepository =
     /// if an optional version is given teh repository will check that it's the same as the latest entity-event version in the repository
     abstract add              : ITransactionScope * EntityId * Version option * 'a -> Version
 
+type ReadModel<'key, 'value> =
+    abstract Read : 'key -> 'value
+
 exception EntityConcurrencyException of EntityId * string
 
 [<AutoOpen>]

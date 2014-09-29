@@ -26,6 +26,12 @@ module EventStore =
         StoreComputation.restore p id
         |> es.run
 
+    /// reads from a read-model
+    let read (rm : ReadModel<'key,'value>) (key : 'key) (es : IEventStore) : 'value =
+         rm
+         |> StoreComputation.read key
+         |> es.run
+
     /// executes a store-computation using the given repository
     /// and it's transaction support
     /// Note: it will reraise any internal error but will not rollback

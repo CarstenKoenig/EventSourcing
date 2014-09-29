@@ -221,6 +221,29 @@ You can use the `store` computational-expression to build up more complex comput
             let ev = MovedTo l
             do! StoreComputation.add id ev }
 
+### experimental support for CQRS
+
+I added some support for CQRS-pattern support in the module `CQRS` (see also the tests in `CqrsTests.fs`).
+
+Right now it's just a record parametrized over a command (you should implement as an ADT) containing:
+
+- an event-store
+- a command-handler to run commands
+- a list of registered sinks for read-models.
+
+#### What is a command-handler?
+A command-handler will translate a command (remember: your ADT) into a store-computation.
+If a command is executed in the CQRS-model this will be called to create a computation that in turn will be run against the store.
+
+#### What are sinks?
+**Sinks** are just subscribtions to the stores event-stream that are using `StoreComputation`s to update external read-models.
+Of course those read-models should use some kind of database to store their values - for the test it's just a simple dictionary.
+
+If a new event is added to the store those sinks will receive those events together with the Id of the entity that caused the event
+and can then decide to `react` by returning `Some (key, StoreComputation<'value>)`. If ther was something returned the computation
+will be run against the store and it's result passed to a update method that should update the external read-model.
+
+
 ## background
 
 **CAUTION: quasi-theoretic semi-nonsense ahead - feel free to skip**
