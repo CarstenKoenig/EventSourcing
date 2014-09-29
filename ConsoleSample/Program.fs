@@ -141,11 +141,10 @@ module Example =
         // register a sink for the location-dictionary:
         model 
         |> CQRS.registerReadModelSink 
-            (fun (eId, ev) ->
+            (fun _ (eId, ev) ->
                 match ev with
-                | MovedTo l -> Some (eId, StoreComputation.returnS l)
-                | _ -> None)
-            (fun (eId, l) -> locations.[eId] <- l)
+                | MovedTo l -> locations.[eId] <- l
+                | _ -> ())
         |> ignore
         // return the model
         model

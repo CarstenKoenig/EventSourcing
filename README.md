@@ -240,8 +240,7 @@ If a command is executed in the CQRS-model this will be called to create a compu
 Of course those read-models should use some kind of database to store their values - for the test it's just a simple dictionary.
 
 If a new event is added to the store those sinks will receive those events together with the Id of the entity that caused the event
-and can then decide to `react` by returning `Some (key, StoreComputation<'value>)`. If ther was something returned the computation
-will be run against the store and it's result passed to a update method that should update the external read-model.
+and can then decide to `update` their external data using the `store` and it's capabilities to run computations. 
 
 #### Example
 This is how the Console-Sample programm defines it's CQRS model:
@@ -272,17 +271,14 @@ To create an sink that just updates a dictionary if the location changed the cod
     // register a sink for the location-dictionary:
     model 
     |> CQRS.registerReadModelSink 
-        (fun (eId, ev) ->
+        (fun _ (eId, ev) ->
             match ev with
-            | MovedTo l -> Some (eId, StoreComputation.returnS l)
-            | _ -> None)
-        (fun (eId, l) -> locations.[eId] <- l)
+            | MovedTo l -> locations.[eId] <- l
+            | _ -> ())
         
 
-The first function translates `MovedTo` events into constant-computations (we don`t need more here) that just returns the
-new location.
-
-The second function updates the value in the dictionary (`locations`).
+As you can see this just updates the dictionary whenever there is a new location set
+within a `MovedTo` event.
 
 ## background
 

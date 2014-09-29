@@ -5,10 +5,6 @@ module CQRS =
     open System
     open System.Collections.Generic
 
-    type ReadModelSink<'key, 'ev, 'value> =
-        abstract React  : ('key * 'ev) -> StoreComputation.T<'value>
-        abstract Update : ('key * 'value) -> unit
-
     type T<'cmd> = 
         internal {
             store           : IEventStore
@@ -39,17 +35,12 @@ module CQRS =
         model.store |> EventStore.restore pr eId
     
     let registerReadModelSink 
-        (react : (EntityId * 'ev) -> ('key * StoreComputation.T<'value>) option) 
-        (update : ('key * 'value) -> unit) 
+        (update : IEventStore -> (EntityId * 'ev) -> unit) 
         (model : T<_>) : IDisposable =
         let unsubscribe =
             model
             |> subscribe (fun (entityId, event) ->
-                match react (entityId, event) with
-                | Some (key, comp) ->
-                    let value = comp |> EventStore.execute model.store
-                    update (key, value)
-                | None -> ())
+                update model.store (entityId, event))
         model.registeredSinks.Add unsubscribe
         { new IDisposable with 
             member __.Dispose() = 

@@ -62,8 +62,8 @@ module ``integration: testing CQRS interfaces`` =
                         })
             let dict = System.Collections.Generic.Dictionary<EntityId, int>()
             model |> CQRS.registerReadModelSink
-                (fun (eId, (_ : NumberValue)) -> Some (eId, StoreComputation.restore currentValueP eId))
-                (fun (eId, v)                 -> dict.[eId] <- v)
+                (fun store (eId, (_ : NumberValue)) -> 
+                    dict.[eId] <- store.run (StoreComputation.restore currentValueP eId))
             |> ignore
             let readModel =
                 { new ReadModel<EntityId, int> with
