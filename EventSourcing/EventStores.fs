@@ -47,7 +47,8 @@ module EventStore =
         | :? HandlerException ->
             // don't rollback on Handler-Exceptions
             reraise()
-        | _ ->
+        | _ as ex ->
+            System.Diagnostics.Debug.WriteLine(ex.Message)
             rep.rollback trans
             reraise()
 

@@ -34,6 +34,9 @@ module CQRS =
     let execute (cmd : 'cmd) (model : T<'cmd>) =
         let comp = model.commandHandler cmd
         model.store.run comp
+
+    let restore (pr : Projection.T<_,_,'a>) (eId : EntityId) (model : T<_>) : 'a =
+        model.store |> EventStore.restore pr eId
     
     let registerReadModelSink 
         (react : (EntityId * 'ev) -> ('key * StoreComputation.T<'value>) option) 

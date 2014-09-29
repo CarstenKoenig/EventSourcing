@@ -3,6 +3,17 @@
 open System
 open EventSourcing
 
+[<AutoOpen>]
+module private Helper =
+    let writeWithColor (c : ConsoleColor) (s : string) =
+        Console.ForegroundColor <- c
+        Console.WriteLine s
+        Console.ResetColor()
+
+    let writeEvent = writeWithColor ConsoleColor.Yellow
+    let showCaption = (fun s -> s + "\n------------------") >> writeWithColor ConsoleColor.Green
+
+
 module Example =
 
     // it's all about cargo containers, that gets created, moved and loaded/unloaded
@@ -92,38 +103,52 @@ module Example =
         createInfo $ id <*> location <*> nettoWeight <*> isOverloaded <*> goods
 
     // *************************
-    // commands:
+    // Readmodel
+    let locations = System.Collections.Generic.Dictionary<Id, Location>()
+    let locationRM = { new ReadModel<Id,Location> with member __.Read(contId) = locations.[contId] }
 
-    let assertExists (id : Id) : StoreComputation.T<unit> =
-        store {
-            let! containerExists = StoreComputation.exists id
-            if not containerExists then failwith "container not found" }
+    // *************************
+    // CQRS
+    type Commands = 
+        | CreateContainer of Id
+        | ShipTo of (Id * Location)
+        | Load of (Id * Goods * Weight)
+        | Unload of (Id * Goods * Weight)
 
-    let createContainer : StoreComputation.T<Id> =
-        store {
-            let id = Id.NewGuid()
-            let ev = Created id
-            do! StoreComputation.add id ev
-            return id }
-
-    let shipTo (l : Location) (id : Id) : StoreComputation.T<unit> =
-        store {
-            do! assertExists id
-            let ev = MovedTo l
-            do! StoreComputation.add id ev }
-
-    let load (g : Goods) (w : Weight) (id : Id) : StoreComputation.T<unit> =
-        store {
-            do! assertExists id
-            let ev = Loaded (g,w)
-            do! StoreComputation.add id ev }
-
-    let unload (g : Goods) (w : Weight) (id : Id) : StoreComputation.T<unit> =
-        store {
-            let! loaded = StoreComputation.restore (goodWeight g) id
-            if w > loaded then failwith "cannot unload more than is loaded"
-            let ev = Unloaded (g,w)
-            do! StoreComputation.add id ev }
+    let model rep = 
+        let assertExists (id : Id) : StoreComputation.T<unit> =
+            store {
+                let! containerExists = StoreComputation.exists id
+                if not containerExists then failwith "container not found" }
+        // create the CQRS model
+        let model =
+            CQRS.create rep (function
+                | CreateContainer id ->
+                        StoreComputation.add id (Created id)
+                | ShipTo (id, l) ->
+                    store {
+                        do! assertExists id
+                        do! StoreComputation.add id (MovedTo l) }
+                | Load (id, g, w) ->
+                    store {
+                        do! assertExists id
+                        do! StoreComputation.add id (Loaded (g,w)) }
+                | Unload (id, g, w) ->
+                    store {
+                        do! assertExists id
+                        do! StoreComputation.add id (Unloaded (g,w)) }
+                )
+        // register a sink for the location-dictionary:
+        model 
+        |> CQRS.registerReadModelSink 
+            (fun (eId, ev) ->
+                match ev with
+                | MovedTo l -> Some (eId, StoreComputation.returnS l)
+                | _ -> None)
+            (fun (eId, l) -> locations.[eId] <- l)
+        |> ignore
+        // return the model
+        model
 
     // ******************
     // example
@@ -131,19 +156,11 @@ module Example =
     /// run a basic example
     let run (rep : IEventRepository) =
 
-        let eventStore = EventStore.fromRepository rep 
-
-        let writeWithColor (c : ConsoleColor) (s : string) =
-            Console.ForegroundColor <- c
-            Console.WriteLine s
-            Console.ResetColor()
-
-        let writeEvent = writeWithColor ConsoleColor.Yellow
-        let showCaption = (fun s -> s + "\n------------------") >> writeWithColor ConsoleColor.Green
+        let model = model rep
 
         // subscribe an event-handler for logging...
         use unsubscribe = 
-            eventStore.subscribe (
+            model |> CQRS.subscribe (
                 function
                 | (id, Created _)      -> sprintf "container %A created" id
                 | (id, MovedTo l)      -> sprintf "container %A moved to %s"  id l
@@ -152,24 +169,23 @@ module Example =
                 >> writeEvent)
 
         // insert some sample history
+        showCaption "Log:"
         let container = 
-            store {
-                let! container = createContainer
-                do!  container |> shipTo "Barcelona"
-                do!  container |> load   "Tomatoes" (toT 3500.0<kg>)
-                do!  container |> shipTo "Hamburg"
-                do!  container |> unload "Tomatoes"         2.5<t>
-                do!  container |> load   "Fish"            20.0<t>
-                do!  container |> shipTo "Hongkong"
-                return container } 
-            |> EventStore.execute eventStore
+            let container = Id.NewGuid()
+            model |> CQRS.execute (CreateContainer container)
+            model |> CQRS.execute (ShipTo (container, "Barcelona"))
+            model |> CQRS.execute (Load   (container, "Tomatoes", toT 3500.0<kg>))
+            model |> CQRS.execute (ShipTo (container, "Hamburg"))
+            model |> CQRS.execute (Unload (container, "Tomatoes", 2.5<t>))
+            model |> CQRS.execute (Load   (container, "Fish", 20.0<t>))
+            model |> CQRS.execute (ShipTo (container, "Hongkong"))
+            container
 
 
         // just show all events
-        showCaption ("\n\nEvents")
-        container
-        |> StoreComputation.restore (Projection.events())
-        |> EventStore.execute eventStore
+        showCaption ("\n\ncontained Events")
+        model
+        |> CQRS.restore (Projection.events()) container
         |> List.iteri (fun i (ev : Container) -> printfn "Event %d: %A" (i+1) ev)
         Console.WriteLine("=============================")
 
@@ -179,11 +195,15 @@ module Example =
             String.Join("\n", itms)
 
         // aggregate the history into a container-info and print it
-        container 
-        |> StoreComputation.restore containerInfo 
-        |> EventStore.execute eventStore
+        model
+        |> CQRS.restore containerInfo container
         |> (fun ci -> printfn "Container %A\ncurrently in %s\nloaded with:\n%s\nfor a total of %.2ft\nis overloaded: %A" 
                         ci.id ci.location (showGoods ci.goods) (ci.netto / 1.0<t>) ci.overloaded)
+
+        // Show the result from the read-model
+        showCaption ("\n\nReadmodel:")
+        locationRM.Read (container)
+        |> printfn "Container %A is currently located in %s" container
 
 module Main =
 
