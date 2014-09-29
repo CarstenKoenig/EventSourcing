@@ -243,6 +243,46 @@ If a new event is added to the store those sinks will receive those events toget
 and can then decide to `react` by returning `Some (key, StoreComputation<'value>)`. If ther was something returned the computation
 will be run against the store and it's result passed to a update method that should update the external read-model.
 
+#### Example
+This is how the Console-Sample programm defines it's CQRS model:
+
+    // create the CQRS model
+    let model =
+        CQRS.create rep (function
+            | CreateContainer id ->
+                    StoreComputation.add id (Created id)
+            | ShipTo (id, l) ->
+                store {
+                    do! assertExists id
+                    do! StoreComputation.add id (MovedTo l) }
+            | Load (id, g, w) ->
+                store {
+                    do! assertExists id
+                    do! StoreComputation.add id (Loaded (g,w)) }
+            | Unload (id, g, w) ->
+                store {
+                    do! assertExists id
+                    do! StoreComputation.add id (Unloaded (g,w)) }
+            )
+            
+This just translates commands like `ShipTo` into events like `MovedTo` and stores but asserts first that the container already exists.
+       
+To create an sink that just updates a dictionary if the location changed the code looks like this:
+            
+    // register a sink for the location-dictionary:
+    model 
+    |> CQRS.registerReadModelSink 
+        (fun (eId, ev) ->
+            match ev with
+            | MovedTo l -> Some (eId, StoreComputation.returnS l)
+            | _ -> None)
+        (fun (eId, l) -> locations.[eId] <- l)
+        
+
+The first function translates `MovedTo` events into constant-computations (we don`t need more here) that just returns the
+new location.
+
+The second function updates the value in the dictionary (`locations`).
 
 ## background
 
