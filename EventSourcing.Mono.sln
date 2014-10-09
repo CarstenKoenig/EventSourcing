@@ -3,18 +3,26 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "EventSourcing", "EventSourcing\EventSourcing.fsproj", "{349B9677-C7D2-4734-BA87-3C4890697806}"
-EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "ConsoleSample.Mono", "ConsoleSample\ConsoleSample.Mono.fsproj", "{61CAB508-ED6B-418C-8F5D-70F35F37BB4D}"
-EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "EventSourcing.Tests", "EventSourcing.Tests\EventSourcing.Tests.fsproj", "{7C405C89-F146-494C-BC83-287ED2C888B6}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6EDCB799-B503-456A-8CBC-E6799DE4FB03}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1 Tests", "1 Tests", "{38202330-27CB-44A0-B5A0-DACA2081CBC8}"
+EndProject
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "EventSourcing.Tests", "EventSourcing.Tests\EventSourcing.Tests.fsproj", "{7C405C89-F146-494C-BC83-287ED2C888B6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2 Libs", "2 Libs", "{9A07FBB1-85AB-4207-B5B9-D1510F135B61}"
+EndProject
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "EventSourcing", "EventSourcing\EventSourcing.fsproj", "{349B9677-C7D2-4734-BA87-3C4890697806}"
+EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "EventSourcing.Sqlite", "EventSourcing.Sqlite\EventSourcing.Sqlite.fsproj", "{A7B93164-6137-4002-BEA6-2CEB8B4670EA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3 Samples", "3 Samples", "{1F691863-121B-4BE3-8E1B-AC2CB2DCB6E9}"
+EndProject
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "ConsoleSample.Mono", "ConsoleSample\ConsoleSample.Mono.fsproj", "{61CAB508-ED6B-418C-8F5D-70F35F37BB4D}"
+EndProject
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "PlayUno", "PlayUno\PlayUno.fsproj", "{1973A9FC-9853-4EC4-8EE3-4E09DB00C0E2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,6 +30,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1973A9FC-9853-4EC4-8EE3-4E09DB00C0E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1973A9FC-9853-4EC4-8EE3-4E09DB00C0E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1973A9FC-9853-4EC4-8EE3-4E09DB00C0E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1973A9FC-9853-4EC4-8EE3-4E09DB00C0E2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{349B9677-C7D2-4734-BA87-3C4890697806}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{349B9677-C7D2-4734-BA87-3C4890697806}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{349B9677-C7D2-4734-BA87-3C4890697806}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -44,9 +56,14 @@ Global
 		{9310A640-9C9F-445D-9FD2-3492AF6C5379}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{7C405C89-F146-494C-BC83-287ED2C888B6} = {38202330-27CB-44A0-B5A0-DACA2081CBC8}
+		{349B9677-C7D2-4734-BA87-3C4890697806} = {9A07FBB1-85AB-4207-B5B9-D1510F135B61}
+		{A7B93164-6137-4002-BEA6-2CEB8B4670EA} = {9A07FBB1-85AB-4207-B5B9-D1510F135B61}
+		{61CAB508-ED6B-418C-8F5D-70F35F37BB4D} = {1F691863-121B-4BE3-8E1B-AC2CB2DCB6E9}
+		{1973A9FC-9853-4EC4-8EE3-4E09DB00C0E2} = {1F691863-121B-4BE3-8E1B-AC2CB2DCB6E9}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = ConsoleSample\ConsoleSample.Mono.fsproj
+		StartupItem = PlayUno\PlayUno.fsproj
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
