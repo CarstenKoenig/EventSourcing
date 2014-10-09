@@ -3,6 +3,8 @@
 module Main =
 
     open EventSourcing
+    open Game
+    open Cards
 
     [<EntryPoint>]
     let main _ = 
@@ -11,20 +13,23 @@ module Main =
             Repositories.InMemory.create false
             |> EventStore.fromRepository 
 
+        let execute = store.run
+
         use unsub =
             store.subscribe (EventHandlers.logEvent store)
 
-        let gameId = store |> Game.startGame (4, Cards.card (3, Cards.Red))
+        let gameId = 
+            execute <| startGame (4, card (3, Red))
 
-        store |> Game.playCard gameId (0, Cards.card (3, Cards.Blue))
-        store |> Game.playCard gameId (1, Cards.card (8, Cards.Blue))
-        store |> Game.playCard gameId (2, Cards.card (8, Cards.Yellow))
-        store |> Game.playCard gameId (3, Cards.card (4, Cards.Blue))
-        store |> Game.playCard gameId (3, Cards.card (4, Cards.Yellow))
-        store |> Game.playCard gameId (1, Cards.card (4, Cards.Red))
-        store |> Game.playCard gameId (0, Cards.card (4, Cards.Green))
-        store |> Game.playCard gameId (1, Cards.kickBack Cards.Green)
-        store |> Game.playCard gameId (0, Cards.skip Cards.Green)
+        execute <| playCard gameId (0, card (3, Blue))
+        execute <| playCard gameId (1, card (8, Blue))
+        execute <| playCard gameId (2, card (8, Yellow))
+        execute <| playCard gameId (3, card (4, Blue))
+        execute <| playCard gameId (3, card (4, Yellow))
+        execute <| playCard gameId (1, card (4, Red))
+        execute <| playCard gameId (0, card (4, Green))
+        execute <| playCard gameId (1, kickBack Green)
+        execute <| playCard gameId (0, skip Green)
 
         System.Console.ReadLine() |> ignore
 

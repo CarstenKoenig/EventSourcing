@@ -4,6 +4,7 @@ module Game =
 
     open Cards
     open EventSourcing
+    open EventSourcing.StoreComputation
 
     type Id          = EntityId
     type PlayerNr    = int 
@@ -34,7 +35,7 @@ module Game =
             if p < 0 then 
                 players + p
             elif p >= players then
-                p % players
+                p - players
             else
                 p
         match dir with
@@ -47,10 +48,16 @@ module Game =
         | CounterClockWise -> ClockWise
 
     let gameId =
-        Projection.single (function GameStarted (id,_) -> Some id | _ -> None)
+        Projection.single (
+            function 
+            | GameStarted (id,_) -> Some id 
+            | _ -> None)
 
     let turnNumber =
-        Projection.sumBy (function NextTurn -> Some 1 | _ -> None)
+        Projection.sumBy (
+            function 
+            | NextTurn -> Some 1 
+            | _ -> None)
 
     let currentDirection =
         Projection.create 
@@ -86,42 +93,53 @@ module Game =
           TurnNr    : int 
           Direction : Direction }
 
-    let private state id c p t d = { GameId = id; TopCard = c; Player = p; TurnNr = t; Direction = d }
+    let private state id c p t d = 
+        { GameId = id
+          TopCard = c
+          Player = p
+          TurnNr = t
+          Direction = d 
+        }
 
     let currentState =
-        state $ gameId <*> topCard <*> currentPlayer <*> turnNumber <*> currentDirection
+        state 
+        $ gameId 
+        <*> topCard 
+        <*> currentPlayer 
+        <*> turnNumber 
+        <*> currentDirection
 
     // Commands
 
     let private sideEffect (gameId : Id) (card : Card) =
         match card with
         | KickBack _ ->
-            StoreComputation.add gameId DirectionChanged
+            add gameId DirectionChanged
         | Skip _ -> 
-            StoreComputation.add gameId SkipPlayer
+            add gameId SkipPlayer
         | _ -> StoreComputation.returnS ()
         
 
-    let startGame (players : int, firstCard : Card) (store : IEventStore) =
+    let startGame (players : int, firstCard : Card) =
         if players <= 2 then invalidArg "players" "There should be at least 3 players"
-        StoreComputation.store {
+        store {
             let id = Id.NewGuid()
-            do! StoreComputation.add id (GameStarted (id, players))
-            do! StoreComputation.add id (CardOnTop firstCard)
+            do! add id (GameStarted (id, players))
+            do! add id (CardOnTop firstCard)
             do! sideEffect id firstCard
-            do! StoreComputation.add id NextTurn
+            do! add id NextTurn
             return id
-        } |> store.run 
+        }
 
-    let playCard (gameId : Id) (player : PlayerNr, card : Card) (store : IEventStore) =
-        StoreComputation.store {
+    let playCard (gameId : Id) (player : PlayerNr, card : Card) =
+        store {
             let! state = gameId |> StoreComputation.restore currentState
             if state.Player <> player then
-                do! StoreComputation.add gameId (TriedToCheat (player, WrongTurn))
+                do! add gameId (TriedToCheat (player, WrongTurn))
             elif Cards.isInvalidNextCard state.TopCard card then
-                do! StoreComputation.add gameId (TriedToCheat (player, InvalidCard card))
+                do! add gameId (TriedToCheat (player, InvalidCard card))
             else
-                do! StoreComputation.add gameId (CardOnTop card)
+                do! add gameId (CardOnTop card)
                 do! sideEffect gameId card
-                do! StoreComputation.add gameId NextTurn
-        } |> store.run
+                do! add gameId NextTurn
+        }
