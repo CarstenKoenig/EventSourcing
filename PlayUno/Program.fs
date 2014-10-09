@@ -9,6 +9,8 @@ module Main =
     [<EntryPoint>]
     let main _ = 
 
+        // prepare the infrastructure
+
         use store =
             Repositories.InMemory.create false
             |> EventStore.fromRepository 
@@ -18,19 +20,27 @@ module Main =
         use unsub =
             store.subscribe (EventHandlers.logEvent store)
 
+        // make a nice little dsl
+
         let gameId = 
             execute <| startGame (4, card (3, Red))
 
-        execute <| playCard gameId (0, card (3, Blue))
-        execute <| playCard gameId (1, card (8, Blue))
-        execute <| playCard gameId (2, card (8, Yellow))
-        execute <| playCard gameId (3, card (4, Blue))
-        execute <| playCard gameId (3, card (4, Yellow))
-        execute <| playCard gameId (1, card (4, Red))
-        execute <| playCard gameId (0, card (4, Green))
-        execute <| playCard gameId (1, kickBack Green)
-        execute <| playCard gameId (0, skip Green)
+        let plays card pnr =
+            execute <| playCard gameId (pnr, card)
+            
+        let player pnr = pnr
+
+        // **** let's play a game
+
+        player 0 |> plays (card (3, Blue))
+        player 1 |> plays (card (8, Blue))
+        player 2 |> plays (card (8, Yellow))
+        player 3 |> plays (card (4, Blue))
+        player 3 |> plays (card (4, Yellow))
+        player 1 |> plays (card (4, Red))
+        player 0 |> plays (card (4, Green))
+        player 1 |> plays (kickBack Green)
+        player 0 |> plays (skip Green)
 
         System.Console.ReadLine() |> ignore
-
-        0 // return an integer exit code
+        0
