@@ -8,7 +8,7 @@ EventSourcing library with support for applicative projection definitions
 
 ### projections
 
-Instead of defining your aggregates or projections in classes and class-methods where you basically do the *left-fold* time and time again on your own you can use the primitive combinators from [Projection.T](/EventSourcing/Projections.fs) to define projections for data-parts you need. Those lego-bricks can be combined and reused - using the operators `<?>` and `<*>` - to get more complex projections.
+Instead of defining your aggregates or projections in classes and class-methods where you basically do the *left-fold* time and time again on your own you can use the primitive combinators from [Projection.T](/src/EventSourcing/Projections.fs) to define projections for data-parts you need. Those lego-bricks can be combined and reused - using the operators `<?>` and `<*>` - to get more complex projections.
 
 #### API
 
@@ -68,7 +68,7 @@ Returns `value` of the only event `e` where `f e` returns `Some value`. Throws a
 
 #### Example
 
-Here is an example from the [ConsoleSample](/ConsoleSample/Program.fs)-project:
+Here is an example from the [ConsoleSample](/src/ConsoleSample/Program.fs)-project:
 
 ```
 /// the netto-weight, assuming a container itself is 2.33t
@@ -287,7 +287,7 @@ within a `MovedTo` event.
 **EventSourcing** is sometimes called *functional-database*. If you look at how current data/state is recustructed from a sequence of events it nothing less than a **functional left-fold**.
 
 The main idea behind this project is to make these **projections** from the event-sequence to data first-class objects.
-For this I wraped the function you fold over (`state -> event -> state`) together with a final projection (`state -> output`) in a *projection-type* [Projection.T](/EventSourcing/Projections.fs).
+For this I wraped the function you fold over (`state -> event -> state`) together with a final projection (`state -> output`) in a *projection-type* [Projection.T](/src/EventSourcing/Projections.fs).
 
 Thanks to the final projection this is obviously a functor. And even it's not really an applicative-functor, as the types from the internal-fold-state mess up most of the laws, it's an applicative functor by behaviour and I added the common operations.
 
