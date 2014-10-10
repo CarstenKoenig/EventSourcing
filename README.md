@@ -68,7 +68,7 @@ Returns `value` of the only event `e` where `f e` returns `Some value`. Throws a
 
 #### Example
 
-Here is an example from the [ConsoleSample](/ConsoleSample/Program.fs)-project:
+Here is an example from the [ConsoleSample](/src/ConsoleSample/Program.fs)-project:
 
 ```
 /// the netto-weight, assuming a container itself is 2.33t
