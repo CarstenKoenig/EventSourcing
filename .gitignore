@@ -3,6 +3,7 @@
 
 test/*
 packages/*
+tools/FAKE/*
 
 # User-specific files
 *.suo
