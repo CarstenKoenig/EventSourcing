@@ -4,6 +4,10 @@ EventSourcing library with support for applicative projection definitions
 
 100% F# and functional style
 
+#### Build
+* Mono: Run *buildMono.sh*  ![Travis build status](https://travis-ci.org/CarstenKoenig/EventSourcing.svg?branch=fake)
+
+
 ## usage
 
 ### projections
