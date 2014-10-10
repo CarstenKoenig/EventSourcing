@@ -89,8 +89,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EventSourcing\EventSourcing.fsproj">
       <Name>EventSourcing</Name>
-      <Project>{349b9677-c7d2-4734-ba87-3c4890697806}</Project>
-      <Private>True</Private>
+      <Project>{349B9677-C7D2-4734-BA87-3C4890697806}</Project>
     </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
