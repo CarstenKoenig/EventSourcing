@@ -8,7 +8,7 @@ module CQRS =
     type T<'cmd> = 
         internal {
             store           : IEventStore
-            commandHandler  : 'cmd -> StoreComputation.T<unit>
+            commandHandler  : 'cmd -> Computation.T<unit>
             registeredSinks : List<IDisposable>
         } 
         interface IDisposable with
@@ -17,7 +17,7 @@ module CQRS =
                 this.registeredSinks.Clear()
                 
 
-    let create (rep : IEventRepository) (cmdHandler : 'cmd -> StoreComputation.T<unit>) =
+    let create (rep : IEventRepository) (cmdHandler : 'cmd -> Computation.T<unit>) =
         let store = EventStore.fromRepository rep
         { store           = store
           commandHandler  = cmdHandler

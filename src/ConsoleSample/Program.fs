@@ -116,27 +116,27 @@ module Example =
         | Unload of (Id * Goods * Weight)
 
     let model rep = 
-        let assertExists (id : Id) : StoreComputation.T<unit> =
-            store {
-                let! containerExists = StoreComputation.exists id
+        let assertExists (id : Id) : Computation.T<unit> =
+            Computation.Do {
+                let! containerExists = Computation.exists id
                 if not containerExists then failwith "container not found" }
         // create the CQRS model
         let model =
             CQRS.create rep (function
                 | CreateContainer id ->
-                        StoreComputation.add id (Created id)
+                        Computation.add id (Created id)
                 | ShipTo (id, l) ->
-                    store {
+                    Computation.Do {
                         do! assertExists id
-                        do! StoreComputation.add id (MovedTo l) }
+                        do! Computation.add id (MovedTo l) }
                 | Load (id, g, w) ->
-                    store {
+                    Computation.Do {
                         do! assertExists id
-                        do! StoreComputation.add id (Loaded (g,w)) }
+                        do! Computation.add id (Loaded (g,w)) }
                 | Unload (id, g, w) ->
-                    store {
+                    Computation.Do {
                         do! assertExists id
-                        do! StoreComputation.add id (Unloaded (g,w)) }
+                        do! Computation.add id (Unloaded (g,w)) }
                 )
         // register a sink for the location-dictionary:
         model 

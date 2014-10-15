@@ -1,6 +1,6 @@
 ﻿namespace EventSourcing
 
-module StoreComputation =
+module Computation =
 
     /// keeps track of used entities and their latest version inside a store-computation
     type UsedEntities = Map<EntityId, Version>
@@ -37,7 +37,7 @@ module StoreComputation =
 
     let (>>=) = bind
 
-    type StoreComputationBuilder internal () =
+    type ComputationBuilder internal () =
         member __.Bind(m, f) = m >>= f
         member __.Return(v) = returnS v
         member __.ReturnFrom(v) = v
@@ -45,7 +45,7 @@ module StoreComputation =
         member __.Zero() = returnS ()   
         member __.Combine (a,b) = combine a b
 
-    let store = StoreComputationBuilder()
+    let Do = ComputationBuilder()
 
     let internal run (rep : IEventRepository) (ts : ITransactionScope) (comp : 'a T) =
         let (res, _) = comp.run rep ts Map.empty
@@ -86,9 +86,3 @@ module StoreComputation =
         create (fun _ _ u ->
             let u'   = u |> removeUsed id
             ((), u'))
-            
-[<AutoOpen>]
-module StoreComputationOperations =
-    open StoreComputation
-
-    let store = store

@@ -43,8 +43,8 @@
   <ItemGroup>
     <Compile Include="Projections.fs" />
     <Compile Include="Common.fs" />
-    <Compile Include="StoreComputation.fs" />
     <Compile Include="EventObservable.fs" />
+    <Compile Include="Computation.fs" />
     <Compile Include="EventStores.fs" />
     <Compile Include="Repositories.fs" />
     <Compile Include="CQRS.fs" />

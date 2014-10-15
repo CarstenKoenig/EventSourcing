@@ -141,7 +141,7 @@ Subscribes an event-handler `h` to the event-store `es`. If you dispose the resu
 
 ##### execute a store-computation
 
-    EventStore.execute (es : IEventStore) (comp : StoreComputation.T<'a>)
+    EventStore.execute (es : IEventStore) (comp : Computation.T<'a>)
 Executes an store-computation `comp` within the store `es` returning its result.
 If there is an exception thrown while running the computation `rollback` at the underlying repository will be called
 and the exception will be passed to the caller.
@@ -177,22 +177,22 @@ The primitive building blocks are:
 
 ##### check if an entity exists
 
-    StoreComputation.exists (id : EntityId) : T<bool>
+    Computation.exists (id : EntityId) : T<bool>
 Checks if there is an entity with id `id` in the store.
 
 ##### restoring data using a projection
 
-    StoreComputation.restore (p : Projection.T<'e,_,'a>) (id : EntityId) : T<'a>
+    Computation.restore (p : Projection.T<'e,_,'a>) (id : EntityId) : T<'a>
 Uses a projection `p` to query data from the event-source of an entity with id `id`.
 
 ##### adding an event 
 
-    StoreComputation.add (id : EntityId) (event : 'e) : T<unit>
+    Computation.add (id : EntityId) (event : 'e) : T<unit>
 Adds an event `event` to the entity with id `id`
 
 ##### ignoring the next concurrency check for an entity
 
-    StoreComputation.ignoreNextConcurrencyCheckFor (id : EntityId) : T<unit>
+    Computation.ignoreNextConcurrencyCheckFor (id : EntityId) : T<unit>
 Normaly each `add` will give the currently known version of the entity to the repository 
 (which should check if this is the same as the last events-version).
 If another event got inserted concurrently this will yield an exception and the transaction will be rolled-back.
@@ -202,7 +202,7 @@ any concurrency issues.
 
 ##### executing a computation using a repository
 
-    StoreComputation.executeIn (rep : IEventRepository) (comp : T<'a>) : 'a
+    Computation.executeIn (rep : IEventRepository) (comp : T<'a>) : 'a
 Executes an computation `comp` using the `rep` repository returning the computation result.
 This will take care of the event-version and call the repositories `commit` on success or `rollback` if an exception occured.
 
@@ -214,16 +214,16 @@ You can use the `store` computational-expression to build up more complex comput
 
 #### Example
 
-    let assertExists (id : Id) : StoreComputation.T<unit> =
-        store {
-            let! containerExists = StoreComputation.exists id
+    let assertExists (id : Id) : Computation.T<unit> =
+        Computation.Do {
+            let! containerExists = Computation.exists id
             if not containerExists then failwith "container not found" }
 
-    let shipTo (l : Location) (id : Id) : StoreComputation.T<unit> =
-        store {
+    let shipTo (l : Location) (id : Id) : Computation.T<unit> =
+        Computation.Do {
             do! assertExists id
             let ev = MovedTo l
-            do! StoreComputation.add id ev }
+            do! Computation.add id ev }
 
 ### experimental support for CQRS
 
@@ -240,7 +240,7 @@ A command-handler will translate a command (remember: your ADT) into a store-com
 If a command is executed in the CQRS-model this will be called to create a computation that in turn will be run against the store.
 
 #### What are sinks?
-**Sinks** are just subscribtions to the stores event-stream that are using `StoreComputation`s to update external read-models.
+**Sinks** are just subscribtions to the stores event-stream that are using `Computation`s to update external read-models.
 Of course those read-models should use some kind of database to store their values - for the test it's just a simple dictionary.
 
 If a new event is added to the store those sinks will receive those events together with the Id of the entity that caused the event
@@ -253,19 +253,19 @@ This is how the Console-Sample programm defines it's CQRS model:
     let model =
         CQRS.create rep (function
             | CreateContainer id ->
-                    StoreComputation.add id (Created id)
+                    Computation.add id (Created id)
             | ShipTo (id, l) ->
-                store {
+                Computation.Do {
                     do! assertExists id
-                    do! StoreComputation.add id (MovedTo l) }
+                    do! Computation.add id (MovedTo l) }
             | Load (id, g, w) ->
-                store {
+                Computation.Do {
                     do! assertExists id
-                    do! StoreComputation.add id (Loaded (g,w)) }
+                    do! Computation.add id (Loaded (g,w)) }
             | Unload (id, g, w) ->
-                store {
+                Computation.Do {
                     do! assertExists id
-                    do! StoreComputation.add id (Unloaded (g,w)) }
+                    do! Computation.add id (Unloaded (g,w)) }
             )
             
 This just translates commands like `ShipTo` into events like `MovedTo` and stores but asserts first that the container already exists.

@@ -4,7 +4,7 @@ module Game =
 
     open Cards
     open EventSourcing
-    open EventSourcing.StoreComputation
+    open EventSourcing.Computation
 
     type Id          = EntityId
     type PlayerNr    = int 
@@ -117,12 +117,12 @@ module Game =
             add gameId DirectionChanged
         | Skip _ -> 
             add gameId SkipPlayer
-        | _ -> StoreComputation.returnS ()
+        | _ -> Computation.returnS ()
         
 
     let startGame (players : int, firstCard : Card) =
         if players <= 2 then invalidArg "players" "There should be at least 3 players"
-        store {
+        Computation.Do {
             let id = Id.NewGuid()
             do! add id (GameStarted (id, players))
             do! add id (CardOnTop firstCard)
@@ -132,8 +132,8 @@ module Game =
         }
 
     let playCard (gameId : Id) (player : PlayerNr, card : Card) =
-        store {
-            let! state = gameId |> StoreComputation.restore currentState
+        Computation.Do {
+            let! state = gameId |> Computation.restore currentState
             if state.Player <> player then
                 do! add gameId (TriedToCheat (player, WrongTurn))
             elif Cards.isInvalidNextCard state.TopCard card then

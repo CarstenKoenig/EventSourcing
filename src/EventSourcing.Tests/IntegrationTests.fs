@@ -52,22 +52,22 @@ module ``integration: using a simple domain with an syncronised inmemory-store``
             sut.eventStore
             |> EventStore.add id (Subtracted n)
 
-        let run (comp : StoreComputation.T<'a>) (sut : T) : 'a =
+        let run (comp : Computation.T<'a>) (sut : T) : 'a =
             EventStore.execute sut.eventStore comp
 
         let createNewNumber (init : int) (sut : T) : EntityId =
-            store {
+            Computation.Do {
                 let newId  = EntityId.NewGuid()
-                do! StoreComputation.add newId (Created init)
+                do! Computation.add newId (Created init)
                 return newId 
             } |> EventStore.execute sut.eventStore
 
         let executeTransaction (srcId: EntityId, destId : EntityId) (v : int) (sut : T) =
-            store {
-                let! vF = StoreComputation.restore currentValueP srcId
+            Computation.Do {
+                let! vF = Computation.restore currentValueP srcId
                 if vF < v then failwith "from-value to small"
-                do! StoreComputation.add srcId (Subtracted v)
-                do! StoreComputation.add destId (Added v)
+                do! Computation.add srcId (Subtracted v)
+                do! Computation.add destId (Added v)
             } |> EventStore.execute sut.eventStore
 
 
@@ -117,11 +117,11 @@ module ``integration: using a simple domain with an syncronised inmemory-store``
         let id = sut |> createNewNumber 0
         let insertAnotherOne() = sut |> addNumber id 5
         let workflow =  
-            store {
-                do! StoreComputation.add id (Added 1)
+            Computation.Do {
+                do! Computation.add id (Added 1)
                 insertAnotherOne()
-                do! StoreComputation.add id (Added 2)
-                return! StoreComputation.restore currentValueP id
+                do! Computation.add id (Added 2)
+                return! Computation.restore currentValueP id
             }
         Assert.Throws<EntityConcurrencyException>(fun () -> 
             sut |> run workflow |> ignore)
@@ -132,12 +132,12 @@ module ``integration: using a simple domain with an syncronised inmemory-store``
         let id = sut |> createNewNumber 0
         let insertAnotherOne() = sut |> addNumber id 5
         let workflow =  
-            store {
-                do! StoreComputation.add id (Added 1)
+            Computation.Do {
+                do! Computation.add id (Added 1)
                 insertAnotherOne()
-                let! _ = StoreComputation.restore currentValueP id
-                do! StoreComputation.add id (Added 2)
-                return! StoreComputation.restore currentValueP id
+                let! _ = Computation.restore currentValueP id
+                do! Computation.add id (Added 2)
+                return! Computation.restore currentValueP id
             }
         Assert.Throws<EntityConcurrencyException>(fun () -> 
             sut |> run workflow |> ignore)
@@ -148,12 +148,12 @@ module ``integration: using a simple domain with an syncronised inmemory-store``
         let id = sut |> createNewNumber 0
         let insertAnotherOne() = sut |> addNumber id 5
         let workflow =  
-            store {
-                do! StoreComputation.add id (Added 1)
+            Computation.Do {
+                do! Computation.add id (Added 1)
                 insertAnotherOne()
-                do! StoreComputation.ignoreNextConccurrencyCheckFor id
-                do! StoreComputation.add id (Added 2)
-                return! StoreComputation.restore currentValueP id
+                do! Computation.ignoreNextConccurrencyCheckFor id
+                do! Computation.add id (Added 2)
+                return! Computation.restore currentValueP id
             }
         Assert.DoesNotThrow(fun () -> 
             sut |> run workflow |> ignore)

@@ -17,7 +17,7 @@ module ``when adding events to an event-store`` =
             private {
               repoMock     : Mock<IEventRepository> 
               entityId     : Guid
-              addTestevent : StoreComputation.T<unit>
+              addTestevent : Computation.T<unit>
               eventStore   : IEventStore 
             }
 
@@ -29,14 +29,14 @@ module ``when adding events to an event-store`` =
             repoMock.Setup(fun r -> r.beginTransaction()).Returns(fun () -> createTrans()) |> ignore
 
             let entityId = Guid.NewGuid()
-            let addTestevent = StoreComputation.add entityId ev
+            let addTestevent = Computation.add entityId ev
             let eventStore = EventStore.fromRepository repoMock.Object
             { repoMock = repoMock
             ; entityId = entityId
             ; addTestevent = addTestevent
             ; eventStore = eventStore }
 
-        let runComputation (comp : StoreComputation.T<'a>) (sut : T) : 'a =
+        let runComputation (comp : Computation.T<'a>) (sut : T) : 'a =
             sut.eventStore.run comp
 
         let run (sut : T) =

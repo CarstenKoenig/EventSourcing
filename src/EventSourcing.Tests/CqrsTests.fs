@@ -48,22 +48,22 @@ module ``integration: testing CQRS interfaces`` =
             let model = 
                 CQRS.create rep (function
                     | Create (eId, n) -> 
-                        StoreComputation.add eId (Created n)
+                        Computation.add eId (Created n)
                     | Add (eId, n) ->
-                        StoreComputation.add eId (Added n)
+                        Computation.add eId (Added n)
                     | Subtract (eId, n) ->
-                        StoreComputation.add eId (Subtracted n)
+                        Computation.add eId (Subtracted n)
                     | Transfer (fromId, toId, amount) ->
-                        store {
-                            let! vF = StoreComputation.restore currentValueP fromId
+                        Computation.Do {
+                            let! vF = Computation.restore currentValueP fromId
                             if vF < amount then failwith "from-amount to small"
-                            do! StoreComputation.add fromId (Subtracted amount)
-                            do! StoreComputation.add toId (Added amount)
+                            do! Computation.add fromId (Subtracted amount)
+                            do! Computation.add toId (Added amount)
                         })
             let dict = System.Collections.Generic.Dictionary<EntityId, int>()
             model |> CQRS.registerReadModelSink
                 (fun store (eId, (_ : NumberValue)) -> 
-                    dict.[eId] <- store.run (StoreComputation.restore currentValueP eId))
+                    dict.[eId] <- store.run (Computation.restore currentValueP eId))
             |> ignore
             let readModel =
                 { new ReadModel<EntityId, int> with

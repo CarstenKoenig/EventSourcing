@@ -7,7 +7,7 @@ open EventObservable
 /// and check if a entity exists
 type IEventStore =
     inherit System.IDisposable
-    abstract run       : StoreComputation.T<'a> -> 'a
+    abstract run       : Computation.T<'a> -> 'a
     abstract subscribe : 'e EventHandler -> System.IDisposable
 
 module EventStore =
@@ -18,18 +18,17 @@ module EventStore =
 
     /// adds an event for a entity into the store
     let add (id : EntityId) (e : 'e) (es : IEventStore) =
-        StoreComputation.add id e
+        Computation.add id e
         |> es.run
 
     /// restores data from a eventstore for a given entity-id using a projection
     let restore (p : Projection.T<_,_,'a>) (id : EntityId) (es : IEventStore) : 'a =
-        StoreComputation.restore p id
+        Computation.restore p id
         |> es.run
 
     /// reads from a read-model
     let read (rm : ReadModel<'key,'value>) (key : 'key) (es : IEventStore) : 'value =
-         rm
-         |> StoreComputation.read key
+         Computation.read key rm
          |> es.run
 
     /// executes a store-computation using the given repository
@@ -37,10 +36,10 @@ module EventStore =
     /// Note: it will reraise any internal error but will not rollback
     /// if the errors where caused by EventHandlers (so the events will
     /// still be saved if there where errors in any EventHandler)
-    let private executeComp (rep : IEventRepository) (comp : StoreComputation.T<'a>) : 'a =
+    let private executeComp (rep : IEventRepository) (comp : Computation.T<'a>) : 'a =
         use trans = rep.beginTransaction ()
         try
-            let res = comp |> StoreComputation.run rep trans
+            let res = comp |> Computation.run rep trans
             rep.commit trans
             res
         with
@@ -63,5 +62,5 @@ module EventStore =
         }
 
     /// executes an store-computation using an event-store
-    let execute (es : IEventStore) (comp : StoreComputation.T<'a>) =
+    let execute (es : IEventStore) (comp : Computation.T<'a>) =
         es.run comp
