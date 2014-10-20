@@ -64,6 +64,16 @@ module Sqlite =
                 with get()  : string        = unbox <| this.Item "json" 
                 and  set (s : string)       = this.["json"] <- s
 
+        type EntityIdRow internal (builder) =
+            inherit System.Data.DataRow(builder)
+
+            member this.EventId 
+                with get()  : int = unbox <| this.Item "eventId" 
+
+            member this.EntityId 
+                with get ()  : EntityId  = EntityId (this.Item "entityId" |> string)
+                and  set (id : EntityId) = this.["entityId"] <- string id
+
         type EntityEvents() =
             inherit System.Data.DataTable ("EntityEvents")
             do
@@ -74,8 +84,22 @@ module Sqlite =
             override this.GetRowType() =
                 typeof<EntityEvent>
             override this.NewRowFromBuilder (builder) =
-                EntityEvent(builder) :> _
-            member this.Events with get() : EntityEvent seq = this.Rows |> Seq.cast<EntityEvent>
+                new EntityEvent(builder) :> _
+            member this.Events 
+                with get() : EntityEvent seq = 
+                    this.Rows |> Seq.cast<EntityEvent>
+
+        type EntityIdTable() =
+            inherit System.Data.DataTable ("EntityEvents")
+            do
+                base.Columns.Add("entityId", typeof<string>) |> ignore
+            override this.GetRowType() =
+                typeof<EntityIdRow>
+            override this.NewRowFromBuilder (builder) =
+                EntityIdRow(builder) :> _
+            member this.Ids 
+                with get() : EntityIdRow seq = 
+                    this.Rows |> Seq.cast<EntityIdRow>
 
         let addParam (name : string, dbType : Data.DbType, v : obj) (cmd : SqliteCommand) =
             let param = SqliteParameter(dbType, v)
@@ -98,6 +122,12 @@ module Sqlite =
 
         let exists (id : EntityId) (con : SqliteConnection) =
             con |> getLatestVersion id <> 0L
+
+        let allIds (con : SqliteConnection) =
+            use adp = new SqliteDataAdapter("SELECT DISTINCT entityId FROM EntityEvents", con)
+            let tbl = new EntityIdTable()
+            let count = adp.Fill(tbl)
+            tbl.Ids |> Seq.map (fun row -> row.EntityId)
 
         let addEvent (entityId : EntityId, afterVersion : int option, event : 'e) (con : SqliteConnection) =
             let json = serialize event
@@ -147,6 +177,7 @@ module Sqlite =
             member __.beginTransaction ()  = new SqliteTransaction (connection, useTransactions) :> ITransactionScope
             member __.rollback t           = t |> call (fun t -> t.Rollback())
             member __.commit   t           = t |> call (fun t -> t.Commit())
+            member __.allIds t             = t |> execute allIds
         }
 
     /// creates an event-repository using the given sqlite-connection-string
