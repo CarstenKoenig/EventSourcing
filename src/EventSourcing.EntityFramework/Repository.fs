@@ -56,6 +56,9 @@ module EntityFramework =
         member this.Exists(id : EntityId) : bool =
             this.EventRows.Any (fun row -> row.entityId = id)
 
+        member this.AllIds () : EntityId seq =
+            this.EventRows.Select(fun row -> row.entityId).ToArray() |> Seq.ofArray
+
         member this.Add (id : EntityId, addAfter : Version option, event : 'e) : Version =
             let versions = this.EventRows
                               .Where(fun e -> e.entityId = id)
@@ -118,4 +121,5 @@ module EntityFramework =
             member __.beginTransaction ()  = new EfTransactionScope (connection, useTransactions) :> ITransactionScope
             member __.rollback t           = t |> call (fun t -> t.Rollback())
             member __.commit   t           = t |> call (fun t -> t.Commit())
+            member __.allIds t             = t |> execute (fun s -> s.AllIds())
         }

@@ -35,7 +35,6 @@ module ``integration: testing CQRS interfaces`` =
             private {
               model     : CQRS.T<Commands>
               values    : System.Collections.Generic.Dictionary<EntityId, int>
-              readModel : ReadModel<EntityId, int>
             }
             with
             interface IDisposable with
@@ -65,12 +64,8 @@ module ``integration: testing CQRS interfaces`` =
                 (fun store (eId, (_ : NumberValue)) -> 
                     dict.[eId] <- store.run (Computation.restore currentValueP eId))
             |> ignore
-            let readModel =
-                { new ReadModel<EntityId, int> with
-                    member __.Read eId = dict.[eId] }
             { model     = model
-            ; values    = dict 
-            ; readModel = readModel}
+            ; values    = dict }
 
         let currentValue (id : EntityId) (sut : T) =
             sut.values.[id]

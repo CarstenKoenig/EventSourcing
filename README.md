@@ -163,6 +163,11 @@ Checks if an event with id `id` exists in the event-store `es`.
 
 ##### create an store from a repository
 
+##### getting all EntityIds in store
+
+    EventStore.allIds (es : IEventStore) : EntityId seq
+Returns a sequence of all known entity-ids in the store.
+
     EventStore.fromRepository (rep : IEventRepository) : IEventStore
 Creates an event-store from a repositorty `rep` - all queries and commands will use this repository and it's
 `commit` and `rollback` will be called accordingly.
@@ -179,6 +184,11 @@ The primitive building blocks are:
 
     Computation.exists (id : EntityId) : T<bool>
 Checks if there is an entity with id `id` in the store.
+
+##### get all entity-ids
+
+    Computation.allIds : T<EntityId seq>
+When run returns all entity-ids currently in the store
 
 ##### restoring data using a projection
 

@@ -59,10 +59,9 @@ module Computation =
         create (fun r t u ->
             (r.exists (t,id), u))
 
-    let read (rm : ReadModel<'key, 'value>) (key : 'key) : T<'value> =
-        create (fun _ _ u ->
-            let value = rm.Read key
-            (value, u))
+    let allIds : T<EntityId seq> =
+        create (fun r t u ->
+            (r.allIds t, u))
 
     /// restore a value from the repository using a projection
     /// tracks the latest version of this entity

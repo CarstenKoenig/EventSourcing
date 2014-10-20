@@ -34,6 +34,11 @@ module CQRS =
     let restore (pr : Projection.T<_,_,'a>) (eId : EntityId) (model : T<_>) : 'a =
         model.store |> EventStore.restore pr eId
     
+    let registerReadmodel
+        (rm : ReadModel.T<'key,'ev,'state,'resulT>)
+        (model : T<_>) : IDisposable = 
+        model |> subscribe (ReadModel.eventHandler rm)
+
     let registerReadModelSink 
         (update : IEventStore -> (EntityId * 'ev) -> unit) 
         (model : T<_>) : IDisposable =

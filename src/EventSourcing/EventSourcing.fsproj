@@ -43,10 +43,12 @@
   <ItemGroup>
     <Compile Include="Projections.fs" />
     <Compile Include="Common.fs" />
+    <Compile Include="ReadModel.fs" />
     <Compile Include="EventObservable.fs" />
     <Compile Include="Computation.fs" />
     <Compile Include="EventStores.fs" />
     <Compile Include="Repositories.fs" />
+    <Compile Include="KeyValueStores.fs" />
     <Compile Include="CQRS.fs" />
   </ItemGroup>
   <PropertyGroup>

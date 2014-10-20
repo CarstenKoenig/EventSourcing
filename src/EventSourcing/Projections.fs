@@ -16,7 +16,16 @@ module Projection =
     /// create a projection based on simple fold
     let create (init : 'a) (f : 'a -> 'e -> 'a) =
         createWithProjection id init f
+
+    let internal initValue (p : T<'e,'i,'a>) : 'i =
+        p.init
+
+    let internal step (p : T<'e,'i,'a>) (state : 'i) (ev : 'e) : 'i =
+        p.foldF state ev
  
+    let internal project (p : T<'e,'i,'a>) (state : 'i) : 'a =
+        p.project state
+
     /// folds events using a projection (starting form init) into a final output
     let foldFrom (b : T<'e,'i,'a>) (init : 'i) : 'e seq -> 'a =
         Seq.fold b.foldF init >> b.project

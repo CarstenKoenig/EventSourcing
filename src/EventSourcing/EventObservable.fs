@@ -32,6 +32,9 @@ module internal EventObservable =
         member __.exists (id : EntityId) =
             rep.exists (transScope,id)
 
+        member __.allIds () =
+            rep.allIds transScope
+
         member __.commit () =
             rep.commit transScope
             // publish new Events
@@ -59,6 +62,7 @@ module internal EventObservable =
             member __.exists (t,id)       = t |> call (fun t -> t.exists id)
             member __.restore (t,id,p)    = t |> call (fun t -> t.restore p id)
             member __.add (t,i,v,e)       = t |> call (fun t -> t.addEvent (i,e) v)
+            member __.allIds t            = t |> call (fun t -> t.allIds ())
         }
 
     let create () : IEventObservable =

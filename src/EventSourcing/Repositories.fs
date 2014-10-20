@@ -43,7 +43,9 @@ module Syncronised =
             member __.restore (t, id, p)   = sync (fun rep -> rep.restore (t,id,p))
             member __.beginTransaction ()  = sync (fun rep -> rep.beginTransaction())
             member __.rollback t           = sync (fun rep -> rep.rollback t)
-            member __.commit   t           = sync (fun rep -> rep.commit t) }
+            member __.commit   t           = sync (fun rep -> rep.commit t) 
+            member __.allIds t             = sync (fun rep -> rep.allIds t)
+        }
 
 
 module InMemory =
@@ -55,6 +57,8 @@ module InMemory =
         let cache = new Dictionary<EntityId, (List<obj>*Version)>()
 
         let exists id = lock cache (fun () -> cache.ContainsKey id)
+
+        let allIds () = lock cache (fun () -> cache.Keys |> Seq.toArray ) |> Seq.ofArray
 
         let add (id, ver) e = lock cache (fun () -> 
             match cache with
@@ -90,4 +94,6 @@ module InMemory =
             member __.restore (_, id, p)   = restore p id
             member __.beginTransaction ()  = emptyScope
             member __.rollback _           = if errorOnRollbackEnabled then failwith "this repository does not support rollbacks - sorry"
-            member __.commit   _           = () }
+            member __.commit   _           = () 
+            member __.allIds _             = allIds ()
+        }

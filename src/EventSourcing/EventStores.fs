@@ -1,4 +1,5 @@
-﻿namespace EventSourcing
+﻿
+namespace EventSourcing
 
 open EventObservable
 
@@ -27,9 +28,8 @@ module EventStore =
         |> es.run
 
     /// reads from a read-model
-    let read (rm : ReadModel<'key,'value>) (key : 'key) (es : IEventStore) : 'value =
-         Computation.read key rm
-         |> es.run
+    let allIds (es : IEventStore) : EntityId seq =
+        Computation.allIds |> es.run
 
     /// executes a store-computation using the given repository
     /// and it's transaction support
@@ -64,3 +64,10 @@ module EventStore =
     /// executes an store-computation using an event-store
     let execute (es : IEventStore) (comp : Computation.T<'a>) =
         es.run comp
+
+    /// registers a readmodel
+    let registerReadmodel 
+        (es : IEventStore) 
+        (kvs : IKeyValueStore<'key,'state>) 
+        (rm : ReadModel.T<'key,'ev,'state,_>) =
+        es.subscribe (ReadModel.eventHandler rm)

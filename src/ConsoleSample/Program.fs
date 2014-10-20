@@ -104,8 +104,8 @@ module Example =
 
     // *************************
     // Readmodel
-    let locations = System.Collections.Generic.Dictionary<Id, Location>()
-    let locationRM = { new ReadModel<Id,Location> with member __.Read(contId) = locations.[contId] }
+    let kvs = EventSourcing.Repositories.KeyValueStores.inMemory()
+    let locationRM = EventSourcing.ReadModel.create kvs location (fun id _ -> id)
 
     // *************************
     // CQRS
@@ -140,11 +140,7 @@ module Example =
                 )
         // register a sink for the location-dictionary:
         model 
-        |> CQRS.registerReadModelSink 
-            (fun _ (eId, ev) ->
-                match ev with
-                | MovedTo l -> locations.[eId] <- l
-                | _ -> ())
+        |> CQRS.registerReadmodel locationRM 
         |> ignore
         // return the model
         model
@@ -201,7 +197,7 @@ module Example =
 
         // Show the result from the read-model
         showCaption ("\n\nReadmodel:")
-        locationRM.Read (container)
+        ReadModel.load locationRM container
         |> printfn "Container %A is currently located in %s" container
 
 module Main =
