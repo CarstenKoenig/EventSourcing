@@ -27,7 +27,7 @@ module ``integration: using a simple domain with an syncronised inmemory-store``
 
         type T = 
             private {
-              eventStore   : IEventStore 
+              eventStore : IEventStore<Guid, NumberValue> 
             }
             with
             interface IDisposable with
@@ -40,29 +40,29 @@ module ``integration: using a simple domain with an syncronised inmemory-store``
                 |> EventStore.fromRepository
             { eventStore = eventStore }
 
-        let currentValue (id : EntityId) (sut : T) =
+        let currentValue (id : Guid) (sut : T) =
             sut.eventStore 
             |> EventStore.restore currentValueP id
 
-        let addNumber (id : EntityId) (n : int) (sut : T) =
+        let addNumber (id : Guid) (n : int) (sut : T) =
             sut.eventStore
             |> EventStore.add id (Added n)
 
-        let subtractNumber (id : EntityId) (n : int) (sut : T) =
+        let subtractNumber (id : Guid) (n : int) (sut : T) =
             sut.eventStore
             |> EventStore.add id (Subtracted n)
 
-        let run (comp : Computation.T<'a>) (sut : T) : 'a =
+        let run (comp : Computation.T<Guid,NumberValue,'a>) (sut : T) : 'a =
             EventStore.execute sut.eventStore comp
 
-        let createNewNumber (init : int) (sut : T) : EntityId =
+        let createNewNumber (init : int) (sut : T) : Guid =
             Computation.Do {
-                let newId  = EntityId.NewGuid()
+                let newId  = Guid.NewGuid()
                 do! Computation.add newId (Created init)
                 return newId 
             } |> EventStore.execute sut.eventStore
 
-        let executeTransaction (srcId: EntityId, destId : EntityId) (v : int) (sut : T) =
+        let executeTransaction (srcId: Guid, destId : Guid) (v : int) (sut : T) =
             Computation.Do {
                 let! vF = Computation.restore currentValueP srcId
                 if vF < v then failwith "from-value to small"

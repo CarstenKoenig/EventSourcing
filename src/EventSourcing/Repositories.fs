@@ -7,10 +7,10 @@ module Syncronised =
     type private Agent<'cmd> = MailboxProcessor<'cmd>
     type private Result<'rep> = Success of 'rep | Failure of exn
     type private Reply<'rep> = AsyncReplyChannel<Result<'rep>>
-    type private Command = Unsafe of (IEventRepository -> obj) * Reply<obj>
+    type private Command<'id,'event> = Unsafe of (IEventRepository<'id,'event> -> obj) * Reply<obj>
 
     /// crates a syncronised Repository (using a command-queue inside an agent) around an exisitng repository
-    let from (rep : IEventRepository) =
+    let from (rep : IEventRepository<'id,'event>) =
         let cts = new System.Threading.CancellationTokenSource()
         let agent = 
             Agent.Start ( (fun inbox ->
@@ -30,11 +30,11 @@ module Syncronised =
                         return! loop()
                     }
                 loop()), cts.Token)
-        let inline sync (f : IEventRepository -> 'a) : 'r = 
+        let inline sync (f : IEventRepository<'id,'event> -> 'a) : 'r = 
             match agent.PostAndReply (fun r -> Unsafe (f >> box, r)) with
             | Success r -> unbox r
             | Failure e -> raise e
-        { new IEventRepository with
+        { new IEventRepository<'id,'event> with
             member __.Dispose() =
                 cts.Cancel()
                 cts.Dispose()
@@ -53,8 +53,8 @@ module InMemory =
     open System.Collections.Generic
 
     /// creates an in-memory event-repository
-    let create (errorOnRollbackEnabled : bool) : IEventRepository =
-        let cache = new Dictionary<EntityId, (List<obj>*Version)>()
+    let create (errorOnRollbackEnabled : bool) : IEventRepository<'id,'event> =
+        let cache = new Dictionary<'id, (List<'event>*Version)>()
 
         let exists id = lock cache (fun () -> cache.ContainsKey id)
 
@@ -70,16 +70,16 @@ module InMemory =
             |> fun (l, v) -> 
                 if Option.isSome ver && v <> ver.Value 
                 then 
-                    raise (EntityConcurrencyException (id, "concurrency exception"))
+                    raise (EntityConcurrencyException "concurrency exception")
                 else
-                    l.Add (box e)
+                    l.Add e
                     let v' = v+1
                     cache.[id] <- (l, v')
                     v')
 
         let restore p id = lock cache (fun () ->
             match cache with
-            | Contains id (l,v) -> (l :> obj seq, v)
+            | Contains id (l,v) -> (l :> 'event seq, v)
             | _                 -> (Seq.empty, 0)
             |> (fun (l,v) -> 
                 (Seq.map unbox l |> Projection.fold p, v)))
@@ -87,7 +87,7 @@ module InMemory =
         let emptyScope = { new ITransactionScope with 
                             member __.Dispose() = () }
 
-        { new IEventRepository with
+        { new IEventRepository<'id,'event> with
             member __.Dispose()            = cache.Clear()
             member __.add (_,id,ver,event) = add (id,ver) event
             member __.exists (_,id)        = exists id

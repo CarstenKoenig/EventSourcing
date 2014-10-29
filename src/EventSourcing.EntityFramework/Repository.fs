@@ -14,6 +14,7 @@ module EntityFramework =
     open System.ComponentModel.DataAnnotations.Schema
     open System.Linq
 
+    type EntityId = Guid
     type Number   = int
     type Version  = int
     type JsonData = string
@@ -67,7 +68,6 @@ module EntityFramework =
             let lastVersion = if Seq.isEmpty versions then 0 else Seq.head versions
             if Option.isSome addAfter && lastVersion <> addAfter.Value then
                 raise (EntityConcurrencyException (
-                        id, 
                         sprintf "concurrency-error: expected to add event after version %d but found last version to be %d" addAfter.Value lastVersion))
             let version = lastVersion + 1
             this.EventRows.Add(
@@ -108,12 +108,12 @@ module EntityFramework =
 
     /// creates an event-repository using the given connection-string to form a entity-framework DbContext
     /// the used DB should contain a EventRows-table consisting holding EventRow data
-    let create (connection, useTransactions : bool) : IEventRepository =
+    let create (connection, useTransactions : bool) : IEventRepository<EntityId, 'event> =
         
         let call f (t : ITransactionScope) = f (t :?> EfTransactionScope)
         let execute f t = call (fun t -> t.execute f) t
 
-        { new IEventRepository with
+        { new IEventRepository<EntityId, 'event> with
             member __.Dispose()            = ()
             member __.add (t,id,ver,event) = t |> execute (fun s -> s.Add (id,ver,event))
             member __.exists (t,id)        = t |> execute (fun s -> s.Exists id)

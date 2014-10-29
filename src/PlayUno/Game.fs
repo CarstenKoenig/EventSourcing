@@ -6,7 +6,7 @@ module Game =
     open EventSourcing
     open EventSourcing.Computation
 
-    type Id          = EntityId
+    type Id          = System.Guid
     type PlayerNr    = int 
     type PlayerCount = int
     type TurnNr      = int
@@ -64,9 +64,9 @@ module Game =
             ClockWise
             (fun dir event ->
                 match event with
-                | GameStarted (_,ps) -> ClockWise
-                | DirectionChanged   -> changedDirection dir
-                | _                  -> dir)
+                | GameStarted (_,_) -> ClockWise
+                | DirectionChanged  -> changedDirection dir
+                | _                 -> dir)
 
     let currentPlayer =
         Projection.createWithProjection 

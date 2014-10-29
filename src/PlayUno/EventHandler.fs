@@ -26,7 +26,7 @@ module EventHandlers =
     let printer f (w : IO.TextWriter) v = 
         w.Write(f v : string)
 
-    let logEvent (store : EventSourcing.IEventStore) 
+    let logEvent (store : EventSourcing.IEventStore<Game.Id, Game.Event>) 
                  (id : Game.Id, event : Game.Event) = 
         let state = store |> EventSourcing.EventStore.restore Game.currentState id
         match event with

@@ -9,28 +9,28 @@ module internal EventObservable =
     open System
     open System.Collections.Generic
 
-    type 'e EventHandler = (EntityId * 'e) -> unit
+    type EventHandler<'id, 'event> = ('id * 'event) -> unit
 
-    type IEventObservable =
+    type IEventObservable<'id, 'event> =
         inherit IDisposable
-        abstract addHandler : 'e EventHandler -> IDisposable
-        abstract publish    : EntityId * 'e -> unit
+        abstract addHandler : EventHandler<'id, 'event> -> IDisposable
+        abstract publish    : 'id * 'event -> unit
 
-    type private ObservableTransactionScope (rep : IEventRepository, obs : IEventObservable) =
+    type private ObservableTransactionScope<'id,'event> (rep : IEventRepository<'id,'event>, obs : IEventObservable<'id,'event>) =
         let newEvents = List<_>()
         let invoke f = try f () with _ as ex -> raise (HandlerException ex)
         let transScope = rep.beginTransaction ()
 
-        member __.addEvent (id : EntityId, event : 'e) (v : EventSourcing.Version option) =
+        member __.addEvent (id : 'id, event : 'event) (v : EventSourcing.Version option) =
             let ver = rep.add (transScope, id, v, event)
             newEvents.Add (fun () -> obs.publish (id, event))
             ver
 
-        member __.restore (p : Projection.T<_,_,_>) (id : EntityId) =
+        member __.restore (p : Projection.T<'event,_,_>) (id : 'id) =
             rep.restore (transScope,id,p)
 
-        member __.exists (id : EntityId) =
-            rep.exists (transScope,id)
+        member __.exists (id : 'id) =
+            rep.exists (transScope, id)
 
         member __.allIds () =
             rep.allIds transScope
@@ -50,11 +50,11 @@ module internal EventObservable =
                 newEvents.Clear ()
                 transScope.Dispose()
 
-    let wrap (rep : IEventRepository) (src : IEventObservable) : IEventRepository =
-        let beginTrans () = new ObservableTransactionScope (rep, src) :> ITransactionScope
-        let call f (t : ITransactionScope) = f (t :?> ObservableTransactionScope)
+    let wrap (rep : IEventRepository<'id,'event>) (src : IEventObservable<'id,'event>) : IEventRepository<'id,'event> =
+        let beginTrans () = new ObservableTransactionScope<'id,'event> (rep, src) :> ITransactionScope
+        let call f (t : ITransactionScope) = f (t :?> ObservableTransactionScope<'id,'event>)
 
-        { new IEventRepository with 
+        { new IEventRepository<'id,'event> with 
             member __.Dispose()           = src.Dispose(); rep.Dispose()
             member __.beginTransaction () = beginTrans ()
             member __.commit t            = t |> call (fun t -> t.commit ())
@@ -65,31 +65,21 @@ module internal EventObservable =
             member __.allIds t            = t |> call (fun t -> t.allIds ())
         }
 
-    let create () : IEventObservable =
-        let handlers = Dictionary<Type, List<(EntityId * obj) -> unit>>()
-        let add (h : 'e EventHandler) : IDisposable =
+    let create () : IEventObservable<'id,'event> =
+        let handlers = List<EventHandler<'id,'event>>()
+        let add (h : EventHandler<'id,'event>) : IDisposable =
             lock handlers (fun () ->
-                let t = typeof<'e>
-                let list =
-                    match handlers with
-                    | Contains t l -> l
-                    | _ ->
-                        let l = new List<(EntityId * obj) -> unit>()
-                        handlers.Add (t, l)
-                        l
-                let h' (id : EntityId, o : obj) = h (id, unbox o)
-                list.Add h'
+                handlers.Add h
                 { new IDisposable with
-                    member __.Dispose() = list.Remove h' |> ignore })
-        let notify (id : EntityId, event : 'e) = 
+                    member __.Dispose() = lock handlers (fun () -> handlers.Remove h |> ignore) 
+                })
+        let notify (id : 'id, event : 'event) = 
             lock handlers (fun () ->
-                let t = typeof<'e>
-                match handlers with
-                | Contains t l -> l :> ((EntityId * obj) -> unit) seq
-                | _            -> Seq.empty
-                |> Seq.iter (fun h -> h (id, box event)))
+                handlers
+                |> Seq.iter (fun h -> h (id, event))
+            )
 
-        { new IEventObservable with
+        { new IEventObservable<'id, 'event> with
             member __.Dispose()      = handlers.Clear()
             member __.addHandler h   = add h
             member __.publish (id,e) = notify (id,e) }

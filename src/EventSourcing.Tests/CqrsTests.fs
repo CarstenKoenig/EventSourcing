@@ -13,6 +13,8 @@ module ``integration: testing CQRS interfaces`` =
     [<AutoOpen>]
     module SystemUnderTest =
 
+        type EntityId = Guid
+
         type NumberValue =
             | Created    of int
             | Added      of int
@@ -33,7 +35,7 @@ module ``integration: testing CQRS interfaces`` =
 
         type T = 
             private {
-              model     : CQRS.T<Commands>
+              model     : CQRS.T<EntityId, NumberValue, Commands>
               values    : System.Collections.Generic.Dictionary<EntityId, int>
             }
             with

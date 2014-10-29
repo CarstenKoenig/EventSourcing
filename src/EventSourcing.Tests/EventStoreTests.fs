@@ -13,16 +13,19 @@ module ``when adding events to an event-store`` =
     [<AutoOpen>]
     module SystemUnderTest =
 
+        type EntityId = Guid
+        type Event = String
+
         type T = 
             private {
-              repoMock     : Mock<IEventRepository> 
+              repoMock     : Mock<IEventRepository<EntityId, Event>> 
               entityId     : Guid
-              addTestevent : Computation.T<unit>
-              eventStore   : IEventStore 
+              addTestevent : Computation.T<EntityId, Event ,unit>
+              eventStore   : IEventStore<EntityId, Event>
             }
 
         let create (ev : string) : T =
-            let repoMock = new Mock<EventSourcing.IEventRepository>()
+            let repoMock = new Mock<EventSourcing.IEventRepository<EntityId, Event>>()
             let createTrans() =
                 let transMock = new Mock<ITransactionScope>()
                 transMock.Object
@@ -36,7 +39,7 @@ module ``when adding events to an event-store`` =
             ; addTestevent = addTestevent
             ; eventStore = eventStore }
 
-        let runComputation (comp : Computation.T<'a>) (sut : T) : 'a =
+        let runComputation (comp : Computation.T<EntityId, Event,'a>) (sut : T) : 'a =
             sut.eventStore.run comp
 
         let run (sut : T) =
@@ -80,7 +83,7 @@ module ``when adding events to an event-store`` =
     module ``the event-store has observable support and one handler will throw an exception`` =
         
 
-        let badHandler (_ : EntityId, _ : string) =
+        let badHandler (_ : 'id, _ : string) =
             failwith "error in handler"
 
         [<Fact>]

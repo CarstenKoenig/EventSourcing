@@ -116,7 +116,7 @@ module Example =
         | Unload of (Id * Goods * Weight)
 
     let model rep = 
-        let assertExists (id : Id) : Computation.T<unit> =
+        let assertExists (id : Id) : Computation.T<Id, Container, unit> =
             Computation.Do {
                 let! containerExists = Computation.exists id
                 if not containerExists then failwith "container not found" }
@@ -149,7 +149,7 @@ module Example =
     // example
 
     /// run a basic example
-    let run (rep : IEventRepository) =
+    let run (rep : IEventRepository<Id, Container>) =
 
         let model = model rep
 
