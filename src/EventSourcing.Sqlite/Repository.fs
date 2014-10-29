@@ -13,6 +13,7 @@ module Sqlite =
     [<AutoOpen>]
     module internal Database =
 
+        type EntityId = System.Guid
         type Number   = int
         type Version  = int
         type JsonData = string
@@ -134,7 +135,7 @@ module Sqlite =
             let latestVer = con |> getLatestVersion entityId
             let newVer = latestVer + 1L
             if Option.isSome afterVersion && int64 afterVersion.Value <> latestVer then 
-                raise (EntityConcurrencyException (entityId, sprintf "concurrency error while adding an event")) 
+                raise (EntityConcurrencyException (sprintf "concurrency error while adding an event")) 
             else
             use cmd = new SqliteCommand("insert into EntityEvents (entityId, version, json) values (@eId,@eVer,@json)", con)
             cmd |> addParam ("@eId", Data.DbType.String, string entityId)
@@ -164,12 +165,12 @@ module Sqlite =
     /// creates an event-repository using the given sqlite-connection
     /// this will check if a EntityEvents table exists and if not create one in the database
     /// if the repository will get disposed it will dispose the connection with it
-    let create (connection : SqliteConnection, useTransactions : bool) : IEventRepository =
+    let create (connection : SqliteConnection, useTransactions : bool) : IEventRepository<EntityId, 'event> =
         
         let call f (t : ITransactionScope) = f (t :?> SqliteTransaction)
         let execute f t = call (fun t -> t.execute f) t
 
-        { new IEventRepository with
+        { new IEventRepository<EntityId, 'event> with
             member __.Dispose()            = connection.Dispose()
             member __.add (t,id,ver,event) = t |> execute (addEvent (id,ver,event))
             member __.exists (t,id)        = t |> execute (exists id)
@@ -182,7 +183,7 @@ module Sqlite =
 
     /// creates an event-repository using the given sqlite-connection-string
     /// this will check if a EntityEvents table exists and if not create one in the database
-    let openAndCreate (conStr : string, useTransactions : bool) : IEventRepository =
+    let openAndCreate (conStr : string, useTransactions : bool) : IEventRepository<EntityId, 'event> =
         let con = new SqliteConnection (conStr)
         con |> createEntityEventsTable
         create (con, useTransactions)
