@@ -92,6 +92,21 @@ module Projection =
             | (Some _, Some _) -> failwith "more than one event yielding a value"
             | _                -> acc)
 
+    let inline any (f : 'e -> bool) : T<'e,_,bool> =
+        create false (fun acc e ->
+            match acc with
+            | true  -> true
+            | false -> f e
+            )
+
+    let inline all (f : 'e -> bool) : T<'e,_,bool> =
+        create true (fun acc e ->
+            match acc with
+            | false -> false
+            | true  -> f e
+            )
+
+
     let (<*>) = sequence
     let ($)   = map
 
